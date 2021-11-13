@@ -71,7 +71,7 @@ equityeval <- function(symbol, bench, period='months') {
         out <- qqplot_nwj(twrx, type='n')
         out <- qqplot_nwj(twrx, type='j')
     }
-    df  <- data.frame(duration, twrcum, alpha, beta, stdev, sharpe,
+    df  <- data.frame(duration_years=c(1,3,5), twrcum, alpha, beta, stdev, sharpe,
                       benchcum, benchstdev, benchsharpe)
     return(df)
 }

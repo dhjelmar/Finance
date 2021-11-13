@@ -1,4 +1,4 @@
-plotdfall <- function(df, xx, size=0.01, type='b', legendloc='topleft') {
+plotdfall <- function(df, xx, size=1, type='b', legendloc='topleft') {
     ## plots every parameter in df as a function of x on single plot
     ## df      = dataframe
     ## xx      = x-axis variable to be specified in quotes
@@ -21,9 +21,15 @@ plotdfall <- function(df, xx, size=0.01, type='b', legendloc='topleft') {
 
     ## need to plot points and not just line to get color using df$series
     ## do not actually want points, so plotting them small with cex=0.01
-    plot(df[1], df$value, col=df$series,
-         cex=size, lty=1, type=type,
+    ncol <- length( unique(df$series) )
+    color <- palette()
+    color <- color[1:ncol]
+    plot(df[[1]], df$value, col=df$series,     # line color not working out
+         cex=size, lty=1, type='n',
          xlab=xx, ylab='value')
+    #for (i in 1:(ncol(df)-1)) {
+    #    lines(df[[1]], df$value)
+    #}
     grid(col='grey70')
     legend(legendloc,
            legend = unique(df$series),
