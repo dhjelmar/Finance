@@ -106,26 +106,20 @@ alpha <- out$alpha
 beta  <- out$beta
 twrcum <- out$twrcum
 benchcum <- out$benchcum
+}
 
 out <- equityeval('AAPL', 'SPY')
 plotspace(1,1)
-plotdfall(out, xx='duration_years')     # line color not working
-
-with(out, plotfit(duration_years, alpha, ylimspec = range(out)))
-with(out, lines(  duration_years, beta))
-
+## melt creates dataframe with only 3 paramters: id.vars,         variable.name, and "value"
+##                                              "duration_years", "series",      and "value"
 outlong <- reshape2::melt(out, id.vars='duration_years', variable.name='series')
-with(outlong, plotfit(duration_years, value, series, multifit = TRUE))
-
+with(outlong, plotfit(duration_years, value, series, multifit = TRUE, interval='line'))
 
 
 outzoo <- zoo::zoo(out)
 outzoo$duration_years <- NULL
 zoo::index(outzoo) <- c(1,3,5)
 zoo::plot.zoo(outzoo)
-
-
-plot(out$beta, out$alpha)
 
 
 
