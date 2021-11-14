@@ -108,12 +108,9 @@ twrcum <- out$twrcum
 benchcum <- out$benchcum
 }
 
+out <- equitymodel('AAPL', 'SPY')
 out <- equityeval('AAPL', 'SPY')
-plotspace(1,1)
-## melt creates dataframe with only 3 paramters: id.vars,         variable.name, and "value"
-##                                              "duration_years", "series",      and "value"
-outlong <- reshape2::melt(out, id.vars='duration_years', variable.name='series')
-with(outlong, plotfit(duration_years, value, series, multifit = TRUE, interval='line'))
+DT::datatable(signif(out,4))
 
 
 outzoo <- zoo::zoo(out)
