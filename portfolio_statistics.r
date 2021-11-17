@@ -113,6 +113,10 @@ out <- equityeval('AAPL', 'SPY')
 DT::datatable(signif(out,4))
 
 
+out <- equityeval('IFED', 'SPY', period='days', duration='1 year')
+out <- equityeval('IFED', 'SPY', period='days', duration='1 year', from='2021-10-11')
+
+
 outzoo <- zoo::zoo(out)
 outzoo$duration_years <- NULL
 zoo::index(outzoo) <- c(1,3,5)
