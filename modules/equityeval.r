@@ -1,7 +1,8 @@
-equityeval <- function(symbol, bench, period='months') {
+equityeval <- function(symbol, bench, period='months', from=NULL,
+                       duration = c('1 year', '3 years', '5 years')) {
 
     ## get history
-    out <- equityhistory(symbol, period=period)  # 50 works, 60 does not
+    out <- equityhistory(symbol, period=period, from = from)  # 50 works, 60 does not
     twr <- out$twr
     benchtwr <- equityhistory(bench, period=period)$twr
     
@@ -9,7 +10,7 @@ equityeval <- function(symbol, bench, period='months') {
     both <- na.omit( cbind(twr, benchtwr) )
 
     ## set plotspace to fill by columns first
-    par(mfcol=c(4,3))
+    par(mfcol=c(4,length(duration)))
 
     ## strip out 1-year, 3-year, and 5-year histories, if available
     alpha    <- NA
@@ -22,7 +23,6 @@ equityeval <- function(symbol, bench, period='months') {
     benchsharpe <- NA
     
     i        <- 0
-    duration <- c('1 year', '3 years', '5 years')
     for (durationi in duration) {
         i <- i + 1
       
@@ -42,8 +42,8 @@ equityeval <- function(symbol, bench, period='months') {
         benchsharpe[i] <- benchcum[i] / benchstdev[i]
 
         ## plot incremental and cumulative returns for input duration
-        print( plotxts(both, main="Incremental TWR" ) )    # oddly "print" is needed in a loop
-        xtscum <- cumprod(both+1)-1
+        print( plotxts(bothx, main="Incremental TWR" ) )    # oddly "print" is needed in a loop
+        xtscum <- cumprod(bothx+1)-1
         print( plotxts(xtscum, main="Cumulative TWR") )
 
         ## add cumulative TWR to plot
@@ -63,14 +63,14 @@ equityeval <- function(symbol, bench, period='months') {
         beta[i]  <- out$beta
         
         ## plot twr vs. sd
-        df <- data.frame(stdev = c(stdev[i], benchstdev[i]),
+        df <- data.frame(stdev = c(stdev[i],  benchstdev[i]),
                          twr   = c(twrcum[i], benchcum[i]),
-                         label = c(bench, symbol))
+                         label = c(symbol,    bench))
         with(df, plotfit(stdev, twr, label,
                          xlabel = 'standard deviation', ylabel='cumulative TWR'))
         
     }
-    df  <- data.frame(duration_years=c(1,3,5), twrcum, alpha, beta, stdev, sharpe,
+    df  <- data.frame(duration, twrcum, alpha, beta, stdev, sharpe,
                       benchcum, benchstdev, benchsharpe)
     return(df)
 }
