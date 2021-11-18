@@ -1,8 +1,8 @@
-equityeval <- function(symbol, bench, period='months', from=NULL,
+equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
                        duration = c('1 year', '3 years', '5 years')) {
 
     ## get history
-    out <- equityhistory(symbol, period=period, from = from)  # 50 works, 60 does not
+    out <- equityhistory(symbol, period=period, from=from, to=to)  # 50 works, 60 does not
     twr <- out$twr
     benchtwr <- equityhistory(bench, period=period)$twr
     
