@@ -142,6 +142,16 @@ df$weight <- df$Value / totalvalue
 
 
 
+stats <- data.frame(symbol,
+                    name = symbolname,
+                    shares = as.numeric(shares), 
+                    value=as.numeric(value), 
+                    twr  = twri,
+                    beta, 
+                    alpha)
+## sort from low to high twr
+stats <- stats[order(stats$twr),]
+
 
 ## calculate portfolio beta
 beta_portfolio  <- sum( weight * beta  )
