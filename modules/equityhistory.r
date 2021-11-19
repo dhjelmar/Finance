@@ -2,8 +2,8 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ## function returns a dataframe of adjusted prices
     ## period = 'days' (default), 'weeks', 'months', 'quarters', or 'years' 
 
-    ## e.g., adjusted_price(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
-    ##       adjusted_price(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
+    ## e.g., equityhistory(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
+    ##       equityhistory(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
 
     ## install.packages('quantmod')
 
