@@ -78,8 +78,11 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ## twrm <- adjpricem[2:nrows,] / adjpricem[1:(nrows-1),] - 1
     ## ## convert back to xts
     ## ## twr <- xts::as.xts(twrm)
+
+    ## calculate standard deviation
+    std <- apply(twr, 2, sd, na.rm=TRUE)
     
-    return(list(close = closeprice, adjprice = adjprice, twr=twr))
+    return(list(close = closeprice, adjprice = adjprice, twr=twr, std=std))
 }
 
 ## out <- equityhistory(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
