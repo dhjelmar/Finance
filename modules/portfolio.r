@@ -16,6 +16,9 @@ portfolio <- function(symbol,
     ## get equity history
     if (is.null(twri))      twri      <- equitytwr(symbol)
 
+    ## change NA to 0
+    twri[is.na(twri)] <- 0
+
     ## create portfolio twri
     twriport <- twri %*% as.matrix(weight)              # matrix
     ## turn back into xts
@@ -29,10 +32,35 @@ portfolio <- function(symbol,
     xtsrange <- paste(noquote(duration[1]), '/', noquote(duration[2]), sep='')
     xtsrange
     twriall <- twriall[xtsrange]
+
+    ## extract names
+    symbols <- names(twriall)
+
+    ## cumulative twr and standard deviation
+    twrcum  <- cumprod(twriall + 1) - 1
+    twrcuml <- t( xts::last(twrcum) )
+    std     <- as.matrix( apply(twriall, 2, sd, na.rm=TRUE) )
+
+    ## risk/reward plot
+    rr <- as.data.frame( cbind(twrcuml, std) )
+    names(rr) <- c('twrcum', 'std')
+    rr$key <- rownames(rr)
+    with(rr, plotfit(std, twrcum, key, interval='noline'))
+
+    ## add efficient frontier lines to plot
+    
+
+    a <- 1
+    a <- 1
+    a <- 1
+    a <- 1
+    a <- 1
     
     return(twriall)
 }
-twribench <- equitytwr('SPY')
-portfolio(c('AAPL', 'IFED'), c(0.2, 0.8), twribench=twribench, duration=c("2021-08-31","2021-10-30"))
-portfolio(c('AAPL', 'IFED'), c(0.2, 0.8), twribench=twribench, duration=c("2021-09-01","2021-10-30"))
+## twribench <- equitytwr('SPY')
+## symbol   <- c('AAPL', 'IFED')
+## weight   <- c(0.2, 0.8)
+## duration <- c("2021-09-01","2021-10-30")
+## portfolio(symbol, weight, twribench=twribench, duration=duration)
 
