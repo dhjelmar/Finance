@@ -1,6 +1,14 @@
 equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
-                       duration = c('1 year', '3 years', '5 years')) {
+                       duration = c('1 year', '3 years', '5 years'),
+                       makeplots = TRUE) {
 
+    ## given a single symbol and benchmark, creates:
+    ##     dataframe containing duration, twrcum, alpha, beta, stdev, sharpe, benchcum, benchstdev, benchsharpe
+    ##     set of plots of: increemntal TWR, 
+    ##                      cumulative twr (twrcum), 
+    ##                      incremental twr for symbol vs. benchmark,
+    ##                      cumulative twr vs. standard deviation for symbol and benchmark
+  
     ## get history
     out <- equityhistory(symbol, period=period, from=from, to=to)  # 50 works, 60 does not
     twr <- out$twr
@@ -42,19 +50,21 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         benchsharpe[i] <- benchcum[i] / benchstdev[i]
 
         ## plot incremental and cumulative returns for input duration
-        print( plotxts(bothx, main="Incremental TWR" ) )    # oddly "print" is needed in a loop
         xtscum <- cumprod(bothx+1)-1
-        print( plotxts(xtscum, main="Cumulative TWR") )
-
-        ## add cumulative TWR to plot
-        mtext(paste('TWR Cum = ', signif(twrcum[i],4)*100, '%;',
-                    'Benchmark Cum = ', signif(benchcum[i], 4)*100, '%',
-                    sep=''), 
-              side=3, line=1, cex=0.75)
+        if (isTRUE(makeplots)) {
+            print( plotxts(bothx, main="Incremental TWR" ) )    # oddly "print" is needed in a loop
+            print( plotxts(xtscum, main="Cumulative TWR") )
+            
+            ## add cumulative TWR to plot
+            mtext(paste('TWR Cum = ', signif(twrcum[i],4)*100, '%;',
+                        'Benchmark Cum = ', signif(benchcum[i], 4)*100, '%',
+                        sep=''), 
+                  side=3, line=1, cex=0.75)
+        }
 
         ## determine alpha and beta for symbol i and create plot
         out <- alpha_beta(twrx, benchtwrx, 
-                          plot = TRUE, 
+                          plot = makeplots, 
                           xlabel = paste('Incremental TWR for', bench, sep=' '),
                           ylabel = paste('Incremental TWR for', symbol, sep=' '),
                           range  = range(twrx, benchtwrx, na.rm = TRUE),
@@ -63,11 +73,13 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         beta[i]  <- out$beta
         
         ## plot twr vs. sd
-        df <- data.frame(stdev = c(stdev[i],  benchstdev[i]),
-                         twr   = c(twrcum[i], benchcum[i]),
-                         label = c(symbol,    bench))
-        with(df, plotfit(stdev, twr, label,
-                         xlabel = 'standard deviation', ylabel='cumulative TWR'))
+        if (isTRUE(makeplots)) {
+            df <- data.frame(stdev = c(stdev[i],  benchstdev[i]),
+                             twr   = c(twrcum[i], benchcum[i]),
+                             label = c(symbol,    bench))
+            with(df, plotfit(stdev, twr, label,
+                             xlabel = 'standard deviation', ylabel='cumulative TWR'))
+        }
         
     }
     df  <- data.frame(duration, twrcum, alpha, beta, stdev, sharpe,
