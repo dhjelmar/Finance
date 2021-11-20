@@ -23,15 +23,26 @@ for (f in r_files) {
 
 ##-----------------------------------------------------------------------------
 ## Import portfolio information
+## Only required info out of this section is to have a dataframe with:
+##       Symbol
+##       Weight
+## In this example, additional info is saved
 account_info <- readall("account_info.xlsx")
 
 ## yahoo uses "-" instead of "." or "/" in symbol names so convert
 account_info$Symbol <- gsub("\\.|\\/", "-", account_info$Symbol)
 
+## consider moneymarkets as cash since yahoo does not have info for them
+account_info[(account_info$Symbol == 'SWVXX' | account_info$Symbol == 'SWYXX'),]$Symbol <- 'Cash'
+
+## do same with individual bonds
+account_info[nchar(account_info$Symbol) > 8,]$Symbol <- 'Cash'
+
 ## if too much was read in, strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Symbol', 'Quantity'))
 
 
+##-----------------------------------------------------------------------------
 ##-----------------------------------------------------------------------------
 ## ADD PRICE FOR EACH SECURITY TO account_info
 
