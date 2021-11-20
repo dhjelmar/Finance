@@ -13,6 +13,7 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ##  the adjusted closing price considers other factors like dividends, stock splits, 
     ##  and new stock offerings. Since the adjusted closing price begins where the 
     ##  closing price ends, it can be called a more accurate measure of stocks' value"
+    if (is.null(to)) to <- Sys.Date()
     if (is.null(from)) {
         ## from not specified so grab earliest to date
         quantmod::getSymbols(symbol, 
