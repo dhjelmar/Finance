@@ -1,4 +1,4 @@
-equitytwr <- function(security, refresh=TRUE, file=NA) {
+equitytwr <- function(security, refresh=TRUE, file=NA, period='months') {
     
     if (isTRUE(refresh)) {
         ## get twr for each security
@@ -13,7 +13,7 @@ equitytwr <- function(security, refresh=TRUE, file=NA) {
                 Cash <- rnorm(nrow(alltwr), mean=0, sd=0.00001)
                 alltwr <- cbind(alltwr, Cash)
             } else {
-                new <- equityhistory(security[i], period='months')  # 50 works, 60 does not
+                new <- equityhistory(security[i], period=period)  # 50 works, 60 does not
                 alltwr <- cbind(alltwr, new$twr)     # xts cbind nicely lines up dates
             }
         }
