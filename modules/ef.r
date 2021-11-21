@@ -1,4 +1,5 @@
-ef <- function(model='Schwab', from, to) {
+ef <- function(model='Schwab', from, to,
+               addline=FALSE, col='black', lty=1, pch=3) {
     ## create Efficient Frontier points to assess TWR vs. risk
     ## model = 'Schwab' uses a blend of US L, US S, Inter, Fixed, and Cash
     ##       = 'SSP'    uses a blend of US L           and Fixed
@@ -77,11 +78,15 @@ ef <- function(model='Schwab', from, to) {
     eftwrcuml <- t( xts::last(eftwrcum) )
     ## following also works to just get total cum
     ## eftwrcum <- as.matrix( apply(eftwri, 2, function(x) { prod(x+1) - 1}) )
-    colnames(eftwrcuml) <- 'EF TWR Cum'
+    colnames(eftwrcuml) <- 'eftwrcum'
     efstd <- as.matrix( apply(eftwri, 2, sd) )  # column vector
-    colnames(efstd) <- 'EF STD'
+    colnames(efstd)  <- 'efstd'
+
+    ef <- as.data.frame( cbind(eftwrcuml, efstd) )
     
-    ef <- cbind(eftwrcuml, efstd)
+    if (isTRUE(addline)) {
+      lines(ef$efstd, ef$eftwrcum, type='b', col=col, lty=lty, pch=pch)
+    }
     
     return(list(model=model, weight=weight, twri=twri, twrcum=twrcum, std=std, ef=ef))
 }
