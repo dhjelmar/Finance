@@ -28,6 +28,10 @@ for (f in r_files) {
 ##       Weight
 ## In this example, additional info is saved
 account_info <- readall("account_info.xlsx")
+account_info <- readall("F:\\Documents\\01_Dave's Stuff\\Finances\\allocation.xlsx",
+                       sheet="all assets", header.row = 2, data.start.row = 4)
+account_info$Account_Name <- account_info$Account
+account_info <- na.omit(account_info)
 
 ## yahoo uses "-" instead of "." or "/" in symbol names so convert
 account_info$Symbol <- gsub("\\.|\\/", "-", account_info$Symbol)
@@ -42,8 +46,43 @@ account_info[nchar(account_info$Symbol) > 8,]$Symbol <- 'Cash'
 account_info[(account_info$Symbol == 'Cash'),]$Symbol <- 'SHV'
 
 ## if too much was read in, strip to only what is needed to identify unique accounts
-account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Symbol', 'Quantity'))
+account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Symbol', 'Quantity', 'Weight'))
 
+##-------------------------------------------------------------------------
+## SELECT ACCOUNT
+account <- split(account_info, account_info$Account_Name)
+names(account)
+df <- account$`DE Invest`
+
+## EVALUATE
+holding <- df$Symbol
+twri    <- equitytwr(holding)
+twrib   <- equitytwr('SPY', period='months')
+out <- portfolio(holding,
+                 df$Weight,
+                 twri  = twri,
+                 twrib = twrib,
+                 from = '2020-10-30',
+                 to   = '2021-10-30',
+                 plottype = 'cria')
+
+
+out <- portfolio(holding,
+                 df$Weight,
+                 twri  = twri,
+                 twrib = twrib,
+                 from = '2018-10-30',
+                 to   = '2021-10-30',
+                 plottype = 'ra')
+
+out$summary[order(out$summary$twrcum),]
+
+
+##-----------------------------------------------------------------------------
+##-----------------------------------------------------------------------------
+
+## Below is additional but probably now broken fanciness to update weights
+## based on quantities of each holding. Need to pull that into a separate function.
 
 ##-----------------------------------------------------------------------------
 ##-----------------------------------------------------------------------------
