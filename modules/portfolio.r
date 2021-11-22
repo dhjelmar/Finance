@@ -178,11 +178,11 @@ portfolio <- function(holding,
         ## create plot
         xrange <- range(rr$beta)
         xlim   <- c(min(xrange),
-                    max(xrange) + 0.2*(max(xrange) - min(xrange)))
+                    max(xrange) + 0.25*(max(xrange) - min(xrange)))
         ylim   <- range(rr$alpha)
 
         with(rrhold, plotfit(beta, alpha, key, interval='noline',
-        ##                     xlimspec=xlim, ylimspec=ylim,
+                             xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'beta',
                              ylabel = 'alpha'))
         ## add portfolio
