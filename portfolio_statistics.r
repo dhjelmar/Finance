@@ -38,6 +38,9 @@ account_info[(account_info$Symbol == 'SWVXX' | account_info$Symbol == 'SWYXX'),]
 ## do same with individual bonds
 account_info[nchar(account_info$Symbol) > 8,]$Symbol <- 'Cash'
 
+## maybe better to consider those things SHV (3-month treasury)
+account_info[(account_info$Symbol == 'Cash'),]$Symbol <- 'SHV'
+
 ## if too much was read in, strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Symbol', 'Quantity'))
 
