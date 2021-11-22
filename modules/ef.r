@@ -1,10 +1,17 @@
-ef <- function(model='Schwab', from, to,
+ef <- function(model='Schwab', from=NA, to=NA, efdata=NA,
                addline=FALSE, col='black', lty=1, pch=3) {
     ## create Efficient Frontier points to assess TWR vs. risk
+    
     ## model = 'Schwab' uses a blend of US L, US S, Inter, Fixed, and Cash
     ##       = 'SSP'    uses a blend of US L           and Fixed
-    ## from  = end of day to start
-    ## to    = end of day to end
+
+    ## duration defined from one of the following
+    ## from and to:
+    ##     from  = end of day to start
+    ##     to    = end of day to end
+    ## efdata:
+    ##     efdata = output from prior execution of ef
+    ##              used to extract twri for benchmark so no call needed to yahoo
     
     ## US L  = SPY
     ## US S  = IWM (iShares Russel 2000)
@@ -14,8 +21,14 @@ ef <- function(model='Schwab', from, to,
     ## Cash  = SHV (iShares Short Treasury Bond, < 1 yr)
 
     symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-    out  <- equityhistory(symbol, from=from, to=to, period='months')
-    twri <- na.omit( out$twr )
+    if (is.na(efdata)) {
+        out  <- equityhistory(symbol, from=from, to=to, period='months')
+        twri <- na.omit( out$twr )
+    } else {
+        twri <- efdata$twri
+        from <- zoo::index(twri)[1]
+        to   <- zoo::index(twri)[nrow(twri)]
+    }
 
     if (model == 'test') {
         twri <- head(twri, 4)
