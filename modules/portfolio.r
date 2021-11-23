@@ -1,4 +1,4 @@
-portfolio_test <- function(twri=NULL, twrib=NULL) {
+portfolio_eval_test <- function(twri=NULL, twrib=NULL) {
     holding <- c('SPLV', 'FAMEX', 'EFA', 'AGG', 'SHV')
     twri    <- equitytwr(holding)
     twrib   <- equitytwr('SPY', period='months')
@@ -11,14 +11,14 @@ portfolio_test <- function(twri=NULL, twrib=NULL) {
                      plottype = 'cria')
 }
 
-portfolio <- function(holding,
-                      weight, 
-                      twri=NULL,
-                      twrib,
-                      from,
-                      to  ,
-                      period='months',
-                      plottype='icra') {
+portfolio_eval <- function(holding,
+                           weight, 
+                           twri=NULL,
+                           twrib,
+                           from,
+                           to  ,
+                           period='months',
+                           plottype='icra') {
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
     ##        weight   = vector of weights for each holding (needs to sum to 1)
     ##        from     = start date
