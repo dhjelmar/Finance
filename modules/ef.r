@@ -101,6 +101,7 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA,
       lines(ef$efstd, ef$eftwrcum, type='b', col=col, lty=lty, pch=pch)
     }
     
-    return(list(model=model, weight=weight, twri=twri, twrcum=twrcum, std=std, ef=ef))
+    return(list(model=model, weight=weight, twri=twri, twrcum=twrcum, std=std,
+                eftwri=eftwri, ef=ef))
 }
 ## ef(from='2020-12-31', to='2021-11-11')
