@@ -48,14 +48,13 @@ account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 
 
 
 ##-------------------------------------------------------------------------
-## GET TWR AND CURRENT PRICES FOR EVERY HOLDING and TWR FOR BENCHMARK
+## GET TWR FOR EVERY HOLDING and BENCHMARK
 
 ## ## set period for twri (days, months, years)
 period     <- 'months'
 
 ## holdings
 holdingall <- unique(account_info$Symbol)
-closeall   <- equityprice(holdingall)
 twriall    <- equitytwr(holdingall, period='month')
 
 ## benchmark options
@@ -75,15 +74,17 @@ eftwri   <- cbind(efdata$twri, efdata$eftwri, efdata2$eftwri)
 
 ##-------------------------------------------------------------------------
 ## CREATE PORTFOLIO TO BE EVALUTED BY SELECTING ACCOUNT (or COMBINED ACCOUNT)
+## create dataframe called "portfolio" with columns labeled "Holding" and "Quantity"
+
+## ## this will create a separte dataframe for each Account_Name
+## account <- split(account_info, account_info$Account_Name)
+## names(account)
+## portfolio <- account$`DE Invest`
+
 ## list account names, owners, and types
 unique(account_info$Account_Name)
 unique(account_info$Owner)
 unique(account_info$Account_Type)
-
-## ## this will create a list of all accounts
-## account <- split(account_info, account_info$Account_Name)
-## names(account)
-## portfolio <- account$`DE Invest`
 
 ## select accounts to create portfolio and give it a name
 portfolioname <- 'Investment Account'
@@ -91,47 +92,13 @@ portfolio <- subset(account_info, Account_Type == 'invest')
 portfolio <- select(portfolio, c('Symbol', 'Quantity'))
 names(portfolio) <- c('Holding', 'Quantity')
 
-## ## print portfolio to be evaluated
-## print(portfolio, 9999)
-
-
 ##-------------------------------------------------------------------------
-## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS)
-
-## combine duplicate holdings
-portfolio <- aggregate(portfolio$Quantity, by=list(portfolio$Holding), FUN=sum)
-names(portfolio) <- c('Holding', 'Quantity')
-
-
-##-------------------------------------------------------------------------
-## DETERMINE WEIGHT OF EACH HOLDING
-
-## add closing price data to portfolio
-closeall$Holding <- rownames(closeall)
-portfolio <- merge(portfolio, closeall, by='Holding')
-portfolio <- select(portfolio, c('Holding', 'Name', 'Quantity', 'Close'))
-
-## determine weight
-portfolio$Market_Value <- portfolio$Quantity * portfolio$Close
-totalvalue             <- sum(portfolio$Market_Value)
-portfolio$Weight       <- portfolio$Market_Value / totalvalue
-
-## print(portfolio)
+## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS) AND DETERMINE WEIGHTS
+portfolio <- weights(portfolio, portfolioname)
 
 ##-------------------------------------------------------------------------
 ## GET TWRI FOR PORTFOLIO FROM TWRIALL
-twri <- twriall[, (colnames(twriall) %in% portfolio$Holding)]
-times <- zoo::index(twri)
-
-## reorder to match order in portfolio dataframe
-## first convert to dataframe
-twri <- as.data.frame(twri)
-## reorder to match portfolio
-twri <- select(twri, portfolio$Holding)
-## convert back to xts
-twri <- xts::as.xts(twri)
-## above did not recover the exact same timestamp so replacing
-zoo::index(twri) <- times
+twri <- porttwri(twriall, portfolio$Holding)
 
 ##-------------------------------------------------------------------------
 ## EVALUATE PORTFOLIO
@@ -146,10 +113,10 @@ out <- portfolio_eval(portfolio$Holding,
                       plottype = 'cria',
                       portfolioname = portfolioname)
 
-summary <- out$summary
-summary[order(summary$twrcum),]
+performance <- out$performance
+performance[order(performance$twrcum),]
 
-portfolio <- merge(portfolio, summary, by='Holding')
+portfolio <- merge(portfolio, performance, by='Holding')
 portfolio$weight <- NULL
 portfolio$label  <- NULL
 printdf(portfolio, 99)
@@ -162,6 +129,6 @@ printdf(portfolio, 99)
 ## }
 
 library(shiny)
-shinyplot(as.data.frame(summary), 'std', 'twrcum')
-shinyplot(as.data.frame(summary), 'beta', 'alpha')
+shinyplot(as.data.frame(performance), 'std', 'twrcum')
+shinyplot(as.data.frame(performance), 'beta', 'alpha')
 
