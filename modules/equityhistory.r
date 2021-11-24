@@ -16,6 +16,7 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     if (is.null(to)) to <- Sys.Date()
     if (is.null(from)) {
         ## from not specified so grab earliest to date
+        ## quantmod::getSymbols('SPY', src='yahoo')
         quantmod::getSymbols(symbol, 
                              src = source, 
                              to  = to,
