@@ -38,3 +38,4 @@ equitytwr <- function(security, refresh=TRUE, file=NA, period='months') {
     
     return(twr=alltwr)
 }
+## equitytwr(c('SPY', 'AAPL'))
