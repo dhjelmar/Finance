@@ -33,7 +33,8 @@ portfolio_eval <- function(holding,
     ## create plots of: risk/reward for portfolio, holdings, and benchmark
     ##                  performance history by year (bar chart?)
     ##                  alpha/beta for portfolio, holdings, and benchmark
-
+    ##                  p/e ratio vs reward?
+    
     ## get equity history
     if (is.null(twri))      twri      <- equitytwr(holding, period=period)
 
@@ -105,25 +106,25 @@ portfolio_eval <- function(holding,
         out[out$Holding == 'portfolio',]$label <- 'portfolio'
         out[out$Holding == 'benchmark',]$label <- 'benchmark'
     }
-    rr  <- cbind(out, twrcuml, std)
-    names(rr) <- c('Holding', 'label', 'twrcum', 'std')
+    perf  <- cbind(out, twrcuml, std)
+    names(perf) <- c('Holding', 'label', 'twrcum', 'std')
 
 
     ##-----------------------------------------------------------------------------
-    ## add alpha and beta to rr
-    rr$alpha <- NA
-    rr$beta  <- NA
+    ## add alpha and beta to perf
+    perf$alpha <- NA
+    perf$beta  <- NA
     benchi <- as.numeric(twriall[, ncol(twriall)])
     for (i in 1:ncol(twriall)) {
         out <- alpha_beta(as.numeric(twriall[,i]), benchi, plot=FALSE)
-        rr[i,]$alpha <- out$alpha
-        rr[i,]$beta  <- out$beta
+        perf[i,]$alpha <- out$alpha
+        perf[i,]$beta  <- out$beta
     }
 
     ## separate into 3 dataframes
-    rrhold  <- rr[rr$Holding != 'portfolio' & rr$Holding != 'benchmark',]
-    rrport  <- rr[rr$Holding == 'portfolio',]
-    rrbench <- rr[rr$Holding == 'benchmark',]
+    perfhold  <- perf[perf$Holding != 'portfolio' & perf$Holding != 'benchmark',]
+    perfport  <- perf[perf$Holding == 'portfolio',]
+    perfbench <- perf[perf$Holding == 'benchmark',]
 
     
     ##-----------------------------------------------------------------------------
@@ -132,25 +133,25 @@ portfolio_eval <- function(holding,
     if (grepl('r', plottype)) {
 
         ## separate into 3 dataframes
-        rrhold  <- rr[rr$Holding != 'portfolio' & rr$Holding != 'benchmark',]
-        rrport  <- rr[rr$Holding == 'portfolio',]
-        rrbench <- rr[rr$Holding == 'benchmark',]
+        perfhold  <- perf[perf$Holding != 'portfolio' & perf$Holding != 'benchmark',]
+        perfport  <- perf[perf$Holding == 'portfolio',]
+        perfbench <- perf[perf$Holding == 'benchmark',]
         
         ## determine reange making room for legend
-        xrange <- range(rr$std, efdata$ef$efstd)
+        xrange <- range(perf$std, efdata$ef$efstd)
         xlim   <- c(min(xrange),
                     max(xrange) + 0.25*(max(xrange) - min(xrange)))
-        ylim   <- range(rr$twrcum, efdata$ef$eftwrcum)
+        ylim   <- range(perf$twrcum, efdata$ef$eftwrcum)
 
         ## plot holdings
-        with(rrhold, plotfit(std, twrcum, label, interval='noline',
+        with(perfhold, plotfit(std, twrcum, label, interval='noline',
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'Standard Deviation',
                              ylabel = 'Cumulative TWR'))
         ## add portfolio
-        points(rrport$std, rrport$twrcum, col='red', pch=16)
+        points(perfport$std, perfport$twrcum, col='red', pch=16)
         ## add benchmark
-        points(rrbench$std, rrbench$twrcum, col='blue', pch=17)
+        points(perfbench$std, perfbench$twrcum, col='blue', pch=17)
         ## add efficient frontier line
         out <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
         out <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
@@ -161,16 +162,16 @@ portfolio_eval <- function(holding,
 
             
         ## ## add holdings
-        ## plot(rrhold$std, rrhold$twrcum,
+        ## plot(perfhold$std, perfhold$twrcum,
         ##      xlab = 'Standard Deviation',
         ##      ylab = 'Cumulative TWR',
         ##      col  = 'black', pch=1,
         ##      xlim=xlim, ylim=ylim)
         ## grid(col='gray70')
         ## ## add portfolio
-        ## points(rrport$std, rrport$twrcum, col='red', pch=16)
+        ## points(perfport$std, perfport$twrcum, col='red', pch=16)
         ## ## add benchmark
-        ## points(rrbench$std, rrbench$twrcum, col='magenta1', pch=17)
+        ## points(perfbench$std, perfbench$twrcum, col='magenta1', pch=17)
         ## 
         ## ## add efficient frontier line
         ## out <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
@@ -197,31 +198,42 @@ portfolio_eval <- function(holding,
     if (grepl('a', plottype) | grepl('b', plottype)) {
         
         ## create plot
-        xrange <- range(rr$beta)
+        xrange <- range(perf$beta)
         xlim   <- c(min(xrange),
                     max(xrange) + 0.25*(max(xrange) - min(xrange)))
-        ylim   <- range(rr$alpha)
-        with(rrhold, plotfit(beta, alpha, label, interval='noline',
+        ylim   <- range(perf$alpha)
+        with(perfhold, plotfit(beta, alpha, label, interval='noline',
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'beta',
                              ylabel = 'alpha'))
         ## add portfolio
-        points(rrport$beta, rrport$alpha, col='red', pch=16)
+        points(perfport$beta, perfport$alpha, col='red', pch=16)
         ## add benchmark
-        points(rrbench$beta, rrbench$alpha, col='blue', pch=17)
+        points(perfbench$beta, perfbench$alpha, col='blue', pch=17)
         ## add subtitle text
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
               side=3, line=1, cex=1)
         
     }
 
-    ## add weights to rr
-    rr$weight <- c(weight, NA, NA)
+
+    ##-----------------------------------------------------------------------------
+    ## P/E plot
+    if (grepl('p', plottype)) {
+
+        ## still need to do
+
+    }
+
+    ##-----------------------------------------------------------------------------
+    
+    ## add weights to perf
+    perf$weight <- c(weight, NA, NA)
 
     ## any correlation
-    stats <- select(rr, twrcum, std, alpha, beta, weight)
-    pairsdf(stats)
+    perf <- select(perf, twrcum, std, alpha, beta, weight)
+    pairsdf(perf)
 
-    return(list(twri = twriall, summary=rr))
+    return(list(twri = twriall, performance=perf))
 }
 
