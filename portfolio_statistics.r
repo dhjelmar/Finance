@@ -116,9 +116,9 @@ out <- portfolio_eval(portfolio$Holding,
 performance <- out$performance
 performance[order(performance$twrcum),]
 
+performance$Holding <- rownames(performance)
 portfolio <- merge(portfolio, performance, by='Holding')
 portfolio$weight <- NULL
-portfolio$label  <- NULL
 printdf(portfolio, 99)
 
 ## ## plot interactive
@@ -128,7 +128,11 @@ printdf(portfolio, 99)
 ##     plot_interactive(rr, 'beta', 'alpha')
 ## }
 
-library(shiny)
 shinyplot(as.data.frame(performance), 'std', 'twrcum')
 shinyplot(as.data.frame(performance), 'beta', 'alpha')
 
+
+##-----------------------------------------------------------------------------
+## DEEP DIVE INTO SPECIFIC HOLDING
+out <- equityeval('BKI', 'SPY')
+out <- equityeval('BKI', 'SPY', duration='3 years')
