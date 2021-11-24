@@ -23,28 +23,50 @@ for (f in r_files) {
 
 ##-----------------------------------------------------------------------------
 ## Import portfolio information
-account_info <- readall("account_info.xlsx")
+## eventually need: account_info = dataframe with "Account_Name", "Owner", "Account_Type",
+##                                                "Holding", "Quantity"
+##                                 other values can be included, but are not needed
 
-## account_info <- readall("F:\\Documents\\01_Dave's Stuff\\Finances\\allocation.xlsx",
-##                        sheet="all assets", header.row = 2, data.start.row = 4)
-## account_info$Account_Name <- account_info$Account
+option <- 2
 
+if (os == 'windows') {
+    account_info <- readall("F:\\Documents\\01_Dave's Stuff\\Finances\\allocation.xlsx",
+                           sheet="all assets", header.row = 2, data.start.row = 4)
+    account_info$Account_Name <- account_info$Account
+
+} else if (os != 'windows' & option == 1) {
+    account_info <- readall("account_info.xlsx")
+    account_info$Holding <- account_info$Symbol
+
+} else {
+    account_info <- readall("Edelman.xlsx")
+    account_info$Symbol   <- account_info$Holding
+    account_info$Quantity <- account_info$Shares
+    account_info$Account_Name <- paste(account_info$Owner, account_info$Account_Type, sep=' ')
+    account_info <- account_info[account_info$Holding != 'SCGE1' &
+                                 account_info$Holding != 'SCGI1' &
+                                 account_info$Holding != 'SCGL1' &
+                                 account_info$Holding != 'SCGN1' &
+                                 account_info$Holding != 'SCGS1' &
+                                 account_info$Holding != 'SCII1'   ,]
+}
+    
 ## strip out any lines with incomplete info
 account_info <- na.omit(account_info)
 
 ## yahoo uses "-" instead of "." or "/" in symbol names so convert
-account_info$Symbol <- gsub("\\.|\\/", "-", account_info$Symbol)
+account_info$Holding <- gsub("\\.|\\/", "-", account_info$Holding)
 
 ## consider moneymarkets and individual bonds (long symbols) as 3-month treasury
 ## since yahoo does not have info for them
-account_info[(account_info$Symbol == 'SWVXX' | account_info$Symbol == 'SWYXX'),]$Symbol <- 'SHV'
-account_info[nchar(account_info$Symbol) > 8,]$Symbol <- 'SHV'
+account_info[(account_info$Holding == 'SWVXX' | account_info$Holding == 'SWYXX'),]$Holding <- 'SHV'
+account_info[nchar(account_info$Holding) > 8,]$Holding <- 'SHV'
 
 ## yahoo does not have cash either, but added option to give 'Cash' a negligible return
-account_info[(account_info$Symbol == 'Cash & Cash Equivalents'),]$Symbol <- 'Cash'
+account_info[(account_info$Holding == 'Cash & Cash Equivalents'),]$Holding <- 'Cash'
 
 ## strip to only what is needed to identify unique accounts
-account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Symbol', 'Quantity'))
+account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Holding', 'Quantity'))
 
 
 ##-------------------------------------------------------------------------
@@ -54,7 +76,7 @@ account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 
 period     <- 'months'
 
 ## holdings
-holdingall <- unique(account_info$Symbol)
+holdingall <- unique(account_info$Holding)
 twriall    <- equitytwr(holdingall, period='month')
 
 ## benchmark options
@@ -62,35 +84,43 @@ efdata   <- ef('Schwab',        from='1900-01-01', to=Sys.Date(), addline=FALSE)
 efdata2  <- ef('S&P 500 / AGG', from='1900-01-01', to=Sys.Date(), addline=FALSE)
 eftwri   <- cbind(efdata$twri, efdata$eftwri, efdata2$eftwri)
 
-
-
-###########################################################################
-###########################################################################
-
-## restart from here to create a new portfolio for evaluation
-
-###########################################################################
-###########################################################################
-
 ##-------------------------------------------------------------------------
 ## CREATE PORTFOLIO TO BE EVALUTED BY SELECTING ACCOUNT (or COMBINED ACCOUNT)
 ## create dataframe called "portfolio" with columns labeled "Holding" and "Quantity"
 
-## ## this will create a separte dataframe for each Account_Name
-## account <- split(account_info, account_info$Account_Name)
-## names(account)
-## portfolio <- account$`DE Invest`
+## this will create a separte dataframe for each Account_Name
+account <- split(account_info, account_info$Account_Name)
+names(account)
+portfolioname <- 'DE Invest'
+portfolio <- account$`DE Invest`
+
+##---------------
 
 ## list account names, owners, and types
 unique(account_info$Account_Name)
 unique(account_info$Owner)
 unique(account_info$Account_Type)
 
+##---------------
+
 ## select accounts to create portfolio and give it a name
+portfolioname <- 'All Holdings'
+portfolio     <- account_info
+
+##---------------
+
 portfolioname <- 'Investment Account'
 portfolio <- subset(account_info, Account_Type == 'invest')
-portfolio <- select(portfolio, c('Symbol', 'Quantity'))
-names(portfolio) <- c('Holding', 'Quantity')
+
+##---------------
+
+portfolioname <- 'Dave IRA - Traditional'
+portfolio <- subset(account_info, Account_Name == 'Dave IRA - Traditional')
+
+##---------------
+
+## strip out only Holding and Quantitiy
+portfolio <- select(portfolio, c('Holding', 'Quantity'))
 
 ##-------------------------------------------------------------------------
 ## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS) AND DETERMINE WEIGHTS
@@ -108,7 +138,7 @@ out <- portfolio_eval(portfolio$Holding,
                       portfolio$Weight,
                       twri  = twri,
                       twrib = twrib,
-                      from = '2020-10-30',
+                      from = '2018-10-30',
                       to   = '2021-10-30',
                       plottype = 'cria',
                       portfolioname = portfolioname)
@@ -128,8 +158,8 @@ printdf(portfolio, 99)
 ##     plot_interactive(rr, 'beta', 'alpha')
 ## }
 
-shinyplot(as.data.frame(performance), 'std', 'twrcum')
-shinyplot(as.data.frame(performance), 'beta', 'alpha')
+shinyplot(as.data.frame(portfolio), 'std', 'twrcum')
+shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
 
 ##-----------------------------------------------------------------------------
