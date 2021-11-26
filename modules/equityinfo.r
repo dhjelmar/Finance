@@ -12,4 +12,3 @@ equityinfo <- function(symbol, extract=NULL) {
 ## equityinfo('SPY')
 ## equityinfo('AAPL', extract='P/E Ratio')
 ## equityinfo('AAPL', extract=c('Name (Long)', 'P/E Ratio', 'Price/EPS Estimate Next Year', 'Price/Book', 'Dividend Yield'))
-
