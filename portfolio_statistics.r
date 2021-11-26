@@ -162,7 +162,20 @@ shinyplot(as.data.frame(portfolio), 'std', 'twrcum')
 shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
 
-##-----------------------------------------------------------------------------
+-##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
 out <- equityeval('BKI', 'SPY')
 out <- equityeval('BKI', 'SPY', duration='3 years')
+
+quantmod::getQuote(c('BKI'), src='yahoo', what = quantmod::yahooQF(c('P/E Ratio', 'PEG Ratio')))
+
+quantmod::getQuote(c('BKI','SPY'), src='yahoo', what = quantmod::yahooQF(c('Previous Close',
+                                                                           'P/E Ratio', 
+                                                                           'Earnings/Share', 
+                                                                           'EPS Forward',
+                                                                           'Price/Book', 
+                                                                           '52-week Low',
+                                                                           '52-week High',
+                                                                           '200-day Moving Average',
+                                                                           'Dividend Yield',
+                                                                           'Dividend/Share')))
