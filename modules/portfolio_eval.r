@@ -8,7 +8,7 @@ portfolio_eval_test <- function(twri=NULL, twrib=NULL) {
                      twrib = twrib,
                      from = '2015-12-31',
                      to   = '2021-11-30',
-                     plottype = 'cria',
+                     plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
                      label = 'symbol')
 }
 
@@ -19,7 +19,7 @@ portfolio_eval <- function(holding,
                            from,
                            to  ,
                            period='months',
-                           plottype='icra',
+                           plottype=c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
                            label = 'symbol',
                            portfolioname=NULL) {
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
@@ -78,21 +78,23 @@ portfolio_eval <- function(holding,
     std     <- as.matrix( apply(twriall, 2, sd, na.rm=TRUE) )
 
     ## reserve plotspace if plottype > 1
-    if (nchar(plottype) == 2) {
+    if (length(plottype) == 2) {
         plotspace(1,2)
-    } else if (nchar(plottype) == 3) {
+    } else if (length(plottype) == 3) {
         plotspace(1,3)
-    } else if (nchar(plottype) == 4) {
+    } else if (length(plottype) == 4) {
         plotspace(2,2)
+    } else if (length(plottype) == 5) {
+        plotspace(2,3)
     }
 
     
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
-    if (grepl('c', plottype)) plot( plotxts(twrcum,
-                                            main=portfolioname) )
-
-
+    if (sum(grepl('twrc', plottype) >= 1)) plot( plotxts(twrcum,
+                                                         main=portfolioname) )
+    
+    
     ##-----------------------------------------------------------------------------
     ## create dataframe of holdings, 'portfolio', and 'benchmark'
     out       <- data.frame(colnames(twriall))
@@ -130,8 +132,8 @@ portfolio_eval <- function(holding,
     ##-----------------------------------------------------------------------------
     ## risk/reward plot
 
-    if (grepl('r', plottype)) {
-
+    if (sum(grepl('rr', plottype) >= 1)) {
+        
         ## separate into 3 dataframes
         perfhold  <- perf[perf$Holding != 'portfolio' & perf$Holding != 'benchmark',]
         perfport  <- perf[perf$Holding == 'portfolio',]
@@ -147,7 +149,8 @@ portfolio_eval <- function(holding,
         with(perfhold, plotfit(std, twrcum, label, interval='noline',
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'Standard Deviation',
-                             ylabel = 'Cumulative TWR'))
+                             ylabel = 'Cumulative TWR',
+                             main   = portfolioname))
         ## add portfolio
         points(perfport$std, perfport$twrcum, col='red', pch=16)
         ## add benchmark
@@ -156,7 +159,7 @@ portfolio_eval <- function(holding,
         out <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
         out <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
-              side=3, line=1, cex=1)
+              side=3, line=0.8, cex=1)
         mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
               side=3, line=0, cex=1)
 
@@ -188,14 +191,14 @@ portfolio_eval <- function(holding,
     
     ##-----------------------------------------------------------------------------
     ## plot incremental TWR
-    if (grepl('i', plottype)) plot( plotxts(twriall,
-                                            main=portfolioname) )
-
-
+    if (sum(grepl('twri', plottype) >= 1)) plot( plotxts(twriall,
+                                                         main=portfolioname) )
+    
+    
     ##-----------------------------------------------------------------------------
     ## alpha/beta plot
 
-    if (grepl('a', plottype) | grepl('b', plottype)) {
+    if (sum(grepl('ab', plottype) >= 1)) {
         
         ## create plot
         xrange <- range(perf$beta)
@@ -205,24 +208,25 @@ portfolio_eval <- function(holding,
         with(perfhold, plotfit(beta, alpha, label, interval='noline',
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'beta',
-                             ylabel = 'alpha'))
+                             ylabel = 'alpha',
+                             main   = portfolioname))
         ## add portfolio
         points(perfport$beta, perfport$alpha, col='red', pch=16)
         ## add benchmark
         points(perfbench$beta, perfbench$alpha, col='blue', pch=17)
         ## add subtitle text
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
-              side=3, line=1, cex=1)
+              side=3, line=0.75, cex=1)
         
     }
 
 
     ##-----------------------------------------------------------------------------
     ## P/E plot
-    if (grepl('p', plottype)) {
-
+    if (sum(grepl('pe', plottype) >= 1)) {
+        
         ## still need to do
-
+        
     }
 
     ##-----------------------------------------------------------------------------
@@ -230,10 +234,14 @@ portfolio_eval <- function(holding,
     ## add weights to perf
     perf$weight <- c(weight, NA, NA)
 
-    ## any correlation
+    ## identify performance info to output and use in correlation plot
     perf <- select(perf, twrcum, std, alpha, beta, weight)
-    pairsdf(perf)
 
+    ## any correlation?
+    if (sum(grepl('pairs', plottype) >= 1)) {
+        pairsdf(perf)
+    }
+    
     return(list(twri = twriall, performance=perf))
 }
 
