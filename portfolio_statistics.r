@@ -139,6 +139,8 @@ out <- portfolio_eval(portfolio$Holding,
                       plottype = c('rr', 'ab'),
                       portfolioname = portfolioname)
 
+
+
 performance <- out$performance
 performance[order(performance$twrcum),]
 
