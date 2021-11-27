@@ -123,6 +123,21 @@ portfolio_eval <- function(holding,
         perf[i,]$beta  <- out$beta
     }
 
+
+    ##-----------------------------------------------------------------------------
+    ## add p/e ratio and other stats to perf
+    out <- quantmod::getQuote(holdings, src='yahoo',
+                              what = quantmod::yahooQF(c('Previous Close',
+                                                         'P/E Ratio',
+                                                         'Price/EPS Estimate Next Year',
+                                                         'Price/Book',
+                                                         'EPS',
+                                                         '50-day Moving Average',
+                                                         '200-day Moving Average')))
+    perf <- cbind(perf, out)
+
+    ##-----------------------------------------------------------------------------
+
     ## separate into 3 dataframes
     perfhold  <- perf[perf$Holding != 'portfolio' & perf$Holding != 'benchmark',]
     perfport  <- perf[perf$Holding == 'portfolio',]
@@ -225,7 +240,6 @@ portfolio_eval <- function(holding,
     ## P/E plot
     if (sum(grepl('pe', plottype) >= 1)) {
         
-        ## still need to do
         
     }
 
