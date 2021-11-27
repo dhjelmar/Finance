@@ -21,7 +21,7 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA,
     ## Cash  = SHV (iShares Short Treasury Bond, < 1 yr)
 
     symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-    if (is.na(efdata)) {
+    if (is.na(efdata[1])) {
         out  <- equityhistory(symbol, from=from, to=to, period='months')
         twri <- na.omit( out$twr )
     } else {
