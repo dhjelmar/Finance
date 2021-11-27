@@ -18,7 +18,7 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     both <- na.omit( cbind(twr, benchtwr) )
 
     ## set plotspace to fill by columns first
-    par(mfcol=c(4,length(duration)))
+    par(mfcol=c(3, length(duration)))
 
     ## strip out 1-year, 3-year, and 5-year histories, if available
     alpha    <- NA
@@ -71,15 +71,6 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
                           main   = durationi)
         alpha[i] <- out$alpha
         beta[i]  <- out$beta
-        
-        ## plot twr vs. sd
-        if (isTRUE(makeplots)) {
-            df <- data.frame(stdev = c(stdev[i],  benchstdev[i]),
-                             twr   = c(twrcum[i], benchcum[i]),
-                             label = c(symbol,    bench))
-            with(df, plotfit(stdev, twr, label,
-                             xlabel = 'standard deviation', ylabel='cumulative TWR'))
-        }
         
     }
     df  <- data.frame(duration, twrcum, alpha, beta, stdev, sharpe,
