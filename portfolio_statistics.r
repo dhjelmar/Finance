@@ -88,34 +88,30 @@ eftwri   <- cbind(efdata$twri, efdata$eftwri, efdata2$eftwri)
 ## CREATE PORTFOLIO TO BE EVALUTED BY SELECTING ACCOUNT (or COMBINED ACCOUNT)
 ## create dataframe called "portfolio" with columns labeled "Holding" and "Quantity"
 
-## this will create a separte dataframe for each Account_Name
-account <- split(account_info, account_info$Account_Name)
+## this will create a separte dataframe for each Account_Name (or Account_Type)
+account <- split(account_info, account_info$Account_Type)
 names(account)
-portfolioname <- 'DE Invest'
-portfolio <- account$`DE Invest`
+portfolio     <- account$`Invest`
+portfolioname <-         'Invest'
 
-##---------------
+skip <- function() {
+    ## list account names, owners, and types
+    unique(account_info$Account_Name)
+    unique(account_info$Owner)
+    unique(account_info$Account_Type)
 
-## list account names, owners, and types
-unique(account_info$Account_Name)
-unique(account_info$Owner)
-unique(account_info$Account_Type)
+    ## select accounts to create portfolio and give it a name
+    portfolioname <- 'All Holdings'
+    portfolio     <- account_info
 
-##---------------
+    portfolioname <- 'Investment Account'
+    portfolio <- subset(account_info, Account_Type == 'invest')
 
-## select accounts to create portfolio and give it a name
-portfolioname <- 'All Holdings'
-portfolio     <- account_info
+    portfolioname <- 'Dave IRA - Traditional'
+    portfolio <- subset(account_info, Account_Name == 'Dave IRA - Traditional')
 
-##---------------
-
-portfolioname <- 'Investment Account'
-portfolio <- subset(account_info, Account_Type == 'invest')
-
-##---------------
-
-portfolioname <- 'Dave IRA - Traditional'
-portfolio <- subset(account_info, Account_Name == 'Dave IRA - Traditional')
+    return(portfolio)
+}
 
 ##---------------
 
@@ -140,7 +136,7 @@ out <- portfolio_eval(portfolio$Holding,
                       twrib = twrib,
                       from = '2018-10-30',
                       to   = '2021-10-30',
-                      plottype = 'cria',
+                      plottype = c('rr', 'ab'),
                       portfolioname = portfolioname)
 
 performance <- out$performance
