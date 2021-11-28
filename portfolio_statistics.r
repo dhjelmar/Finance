@@ -27,7 +27,7 @@ for (f in r_files) {
 ##                                                "Holding", "Quantity"
 ##                                 other values can be included, but are not needed
 
-option <- 2
+option <- 3
 
 if (os == 'windows') {
     account_info <- readall("F:\\Documents\\01_Dave's Stuff\\Finances\\allocation.xlsx",
@@ -38,9 +38,8 @@ if (os == 'windows') {
     account_info <- readall("account_info.xlsx")
     account_info$Holding <- account_info$Symbol
 
-} else {
+} else if (os != 'windows' & option == 2) {
     account_info <- readall("Edelman.xlsx")
-    account_info$Symbol   <- account_info$Holding
     account_info$Quantity <- account_info$Shares
     account_info$Account_Name <- paste(account_info$Owner, account_info$Account_Type, sep=' ')
     account_info <- account_info[account_info$Holding != 'SCGE1' &
@@ -49,6 +48,15 @@ if (os == 'windows') {
                                  account_info$Holding != 'SCGN1' &
                                  account_info$Holding != 'SCGS1' &
                                  account_info$Holding != 'SCII1'   ,]
+
+} else if (os != 'windows' & option == 3) {
+    account_info <- readall("allocation_stripped.xlsx", sheet='all assets', 
+                            header.row=2, data.start.row=4)
+    account_info$Holding <- account_info$Symbol
+    ## holdings in charity account are not in yahoo
+    account_info <- account_info[account_info$Account_Type != 'Charity',]
+    account_info$Account_Type[account_info$Account_Type == 'ira'] <- 'IRA'
+    account_info$Account_Type[grepl('FAM', account_info$Account_Name)] <- 'FAM'
 }
     
 ## strip out any lines with incomplete info
@@ -57,13 +65,13 @@ account_info <- na.omit(account_info)
 ## yahoo uses "-" instead of "." or "/" in symbol names so convert
 account_info$Holding <- gsub("\\.|\\/", "-", account_info$Holding)
 
+## yahoo does not have cash, but added option to give 'Cash' a negligible return
+account_info[(account_info$Holding == 'Cash & Cash Investments'),]$Holding <- 'Cash'
+
 ## consider moneymarkets and individual bonds (long symbols) as 3-month treasury
 ## since yahoo does not have info for them
 account_info[(account_info$Holding == 'SWVXX' | account_info$Holding == 'SWYXX'),]$Holding <- 'SHV'
 account_info[nchar(account_info$Holding) > 8,]$Holding <- 'SHV'
-
-## yahoo does not have cash either, but added option to give 'Cash' a negligible return
-account_info[(account_info$Holding == 'Cash & Cash Equivalents'),]$Holding <- 'Cash'
 
 ## strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Holding', 'Quantity'))
@@ -89,60 +97,73 @@ eftwri   <- cbind(efdata$twri, efdata$eftwri, efdata2$eftwri)
 ## create dataframe called "portfolio" with columns labeled "Holding" and "Quantity"
 
 ## this will create a separte dataframe for each Account_Name (or Account_Type)
-account <- split(account_info, account_info$Account_Type)
+accountc <- account_info[account_info$Owner == 'C',]
+accountp <- account_info[account_info$Owner == 'P',]
+accountd <- account_info[(account_info$Owner == 'D' |
+                          account_info$Owner == 'DE' |
+                          account_info$Owner == 'E' ),]
+
+account <- accountd
+account <- split(account, account$Account_Type)
 names(account)
-portfolio     <- account$`Invest`
-portfolioname <-         'Invest'
 
-skip <- function() {
-    ## list account names, owners, and types
-    unique(account_info$Account_Name)
-    unique(account_info$Owner)
-    unique(account_info$Account_Type)
+naccounts <- length(names(account))
+perf_all <- NA
+for (i in 1:naccounts) {
 
-    ## select accounts to create portfolio and give it a name
-    portfolioname <- 'All Holdings'
-    portfolio     <- account_info
+    ## select portfolio
+    portfolio     <- account[[i]]
+    portfolioname <- names(account[i])
+    cat('portfolio =', i, 'of', naccounts, 
+        '; portfolioname =', portfolioname, '\n')
 
-    portfolioname <- 'Investment Account'
-    portfolio <- subset(account_info, Account_Type == 'invest')
+    ## strip out only Holding and Quantitiy
+    portfolio <- select(portfolio, c('Holding', 'Quantity'))
+    
+    ## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS) AND DETERMINE WEIGHTS
+    portfolio <- weights(portfolio, portfolioname)
 
-    portfolioname <- 'Dave IRA - Traditional'
-    portfolio <- subset(account_info, Account_Name == 'Dave IRA - Traditional')
+    ## GET TWRI FOR PORTFOLIO FROM TWRIALL
+    twri <- porttwri(twriall, portfolio$Holding)
 
-    return(portfolio)
+    ## EVALUATE PORTFOLIO
+    eftwri$schwab_70_30 = (eftwri$schwab_60_40 + eftwri$schwab_80_20)/2
+    twrib <- eftwri$schwab_70_30
+    twrib <- twriall$SPY
+    from = '2018-10-30'
+    to   = '2021-10-30'
+    duration <- paste(from, 'to', to, sep=' ')
+    out <- portfolio_eval(portfolio$Holding,
+                          portfolio$Weight,
+                          twri  = twri,
+                          twrib = twrib,
+                          from  = from,
+                          to    = to,
+                          plottype = c('rr', 'ab'),
+                          main = paste(portfolioname, '; duration =', duration, sep=' '))
+
+    ## collect results
+    performance <- out$performance
+    ## performance[order(performance$twrcum),]
+    performance$portfolioname <- portfolioname
+    performance$duration      <- duration
+
+    ## collect results
+    perf_all <- rbind(perf_all, performance)
+    
 }
+## remove 1st row
+perf_all <- perf_all[-1,]
 
-##---------------
-
-## strip out only Holding and Quantitiy
-portfolio <- select(portfolio, c('Holding', 'Quantity'))
-
-##-------------------------------------------------------------------------
-## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS) AND DETERMINE WEIGHTS
-portfolio <- weights(portfolio, portfolioname)
-
-##-------------------------------------------------------------------------
-## GET TWRI FOR PORTFOLIO FROM TWRIALL
-twri <- porttwri(twriall, portfolio$Holding)
-
-##-------------------------------------------------------------------------
-## EVALUATE PORTFOLIO
-eftwri$schwab_70_30 = (eftwri$schwab_60_40 + eftwri$schwab_80_20)/2
-twrib <- eftwri$schwab_70_30
-out <- portfolio_eval(portfolio$Holding,
-                      portfolio$Weight,
-                      twri  = twri,
-                      twrib = twrib,
-                      from = '2018-10-30',
-                      to   = '2021-10-30',
-                      plottype = c('rr', 'ab'),
-                      portfolioname = portfolioname)
+# create and plot dataframe of ony portfolio accounts and benchmark for summary info
+pp <- select(performance, c('portfolioname', 'duration',
+                            'Holding', 'twrcum', 'std', 'alpha', 'beta', 'P/E Ratio'))
+pp_type  <- perf_all[perf_all$Holding == 'portfolio',]
+pp_bench <- perf_all[perf_all$Holding == 'benchmark',][1,]
+pp_bench$portfolioname <- 'benchmark'
+pp_type <- rbind(perf_type, perf_bench)
 
 
-
-performance <- out$performance
-performance[order(performance$twrcum),]
 
 performance$Holding <- rownames(performance)
 portfolio <- merge(portfolio, performance, by='Holding')
