@@ -21,7 +21,7 @@ portfolio_eval <- function(holding,
                            period='months',
                            plottype=c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
                            label = 'symbol',
-                           portfolioname=NULL) {
+                           main=NULL) {
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
     ##        weight   = vector of weights for each holding (needs to sum to 1)
     ##        from     = start date
@@ -92,7 +92,7 @@ portfolio_eval <- function(holding,
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
     if (sum(grepl('twrc', plottype) >= 1)) plot( plotxts(twrcum,
-                                                         main=portfolioname) )
+                                                         main=main) )
     
     
     ##-----------------------------------------------------------------------------
@@ -134,8 +134,12 @@ portfolio_eval <- function(holding,
                                                          'EPS',
                                                          '50-day Moving Average',
                                                          '200-day Moving Average')))
+    out$'Trade Time' <- NULL
+    outname <- names(out)
+    names(out) <- c('close', outname[2:ncol(out)])
     perf <- cbind(perf, out)
 
+    
     ##-----------------------------------------------------------------------------
 
     ## separate into 3 dataframes
@@ -165,7 +169,7 @@ portfolio_eval <- function(holding,
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'Standard Deviation',
                              ylabel = 'Cumulative TWR',
-                             main   = portfolioname))
+                             main   = main))
         ## add portfolio
         points(perfport$std, perfport$twrcum, col='red', pch=16)
         ## add benchmark
@@ -207,7 +211,7 @@ portfolio_eval <- function(holding,
     ##-----------------------------------------------------------------------------
     ## plot incremental TWR
     if (sum(grepl('twri', plottype) >= 1)) plot( plotxts(twriall,
-                                                         main=portfolioname) )
+                                                         main=main) )
     
     
     ##-----------------------------------------------------------------------------
@@ -224,7 +228,7 @@ portfolio_eval <- function(holding,
                              xlimspec=xlim, ylimspec=ylim,
                              xlabel = 'beta',
                              ylabel = 'alpha',
-                             main   = portfolioname))
+                             main   = main))
         ## add portfolio
         points(perfport$beta, perfport$alpha, col='red', pch=16)
         ## add benchmark
@@ -245,15 +249,15 @@ portfolio_eval <- function(holding,
 
     ##-----------------------------------------------------------------------------
     
-    ## add weights to perf
+    ## add weights to perf and drop label parameter
     perf$weight <- c(weight, NA, NA)
-
-    ## identify performance info to output and use in correlation plot
-    perf <- select(perf, twrcum, std, alpha, beta, weight)
+    perf$label  <- NULL
 
     ## any correlation?
     if (sum(grepl('pairs', plottype) >= 1)) {
-        pairsdf(perf)
+        ## identify performance info to output and use in correlation plot
+        pairplot <- select(perf, twrcum, std, alpha, beta, 'P/E Ratio', 'Price/Book', weight)
+        pairsdf(pairplot)
     }
     
     return(list(twri = twriall, performance=perf))
