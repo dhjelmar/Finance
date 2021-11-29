@@ -174,7 +174,8 @@ pp_bench$portfolioname <- 'benchmark'
 perf_summary <- rbind(pp_type, pp_bench)
 perf_summary$Holding <- NULL
 perf_summary$Market_Value <- c(mv, NA)   # NA is for the benchmark
-perf_summary$Weight       <- perf_summary$Market_Value / sum(perf_summary$Market_Value, na.rm=TRUE)
+totalvalue <- sum(perf_summary$Market_Value, na.rm=TRUE) / 2  # divide by 2 because "all combined" is in list
+perf_summary$Weight       <- perf_summary$Market_Value / totalvalue
 rownames(perf_summary) <- 1:nrow(perf_summary)
 perf_summary <- as_tibble(perf_summary)
 printdf(perf_summary, 999)
@@ -184,15 +185,17 @@ plotspace(2,1)
 ## risk/return plot for all accounts in portfolio
 with(perf_summary, plotfit(twrcum, std, portfolioname,
                            xlab = 'Standard Deviation',
-                           ylab = 'Cumulative TWR',
+                           ylab = 'Cumulative TWR', 
+                           bg   = 'grey80',
                            interval = 'noline',
                            suppress = 'yes'))
 ## add efficient fontier lines
 eftwrc <- cumprod(eftwri + 1) - 1
-xxxxxxxxxxxx
-xxxxxxxxxxxx
+##                                           dlh still need to do
+##
 ## alpha/beta plot for all accounts in portfolio
 with(perf_summary, plotfit(beta, alpha, portfolioname,
+                           bg   = 'grey80',
                            interval = 'noline',
                            suppress = 'yes'))
 
@@ -202,7 +205,13 @@ with(perf_summary, plotfit(beta, alpha, portfolioname,
 ## account_list <- split(account, account$Account_Type)
 portfolio_list <- split(perf_all, perf_all$portfolioname)
 names(portfolio_list)
-portfolio <- portfolio_list$Invest
+portfolio <- as_tibble(portfolio_list$IRA)
+printdf(portfolio, 999, c('portfolioname', 'Holding', 'twrcum', 'std', 
+                          'alpha', 'beta', 'P/E Ratio', 'weight'))
+
+## Schwab Invest      = 80/20
+##        IRA w/o FAM = 60/40
+
 
 ## ## plot interactive
 ## if (os == 'windows') {
@@ -210,7 +219,6 @@ portfolio <- portfolio_list$Invest
 ##     plot_interactive(portfolio, 'std', 'twrcum')
 ##     plot_interactive(portfolio, 'beta', 'alpha')
 ## }
-
 shinyplot(as.data.frame(portfolio), 'std', 'twrcum')
 shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
