@@ -66,12 +66,10 @@ account_info <- na.omit(account_info)
 account_info$Holding <- gsub("\\.|\\/", "-", account_info$Holding)
 
 ## yahoo does not have cash, but added option to give 'Cash' a negligible return
+## do the same for moneymarkets and individual bonds (long symbols) since also not in yahoo
 account_info[(account_info$Holding == 'Cash & Cash Investments'),]$Holding <- 'Cash'
-
-## consider moneymarkets and individual bonds (long symbols) as 3-month treasury
-## since yahoo does not have info for them
-account_info[(account_info$Holding == 'SWVXX' | account_info$Holding == 'SWYXX'),]$Holding <- 'SHV'
-account_info[nchar(account_info$Holding) > 8,]$Holding <- 'SHV'
+account_info[(account_info$Holding == 'SWVXX' | account_info$Holding == 'SWYXX'),]$Holding <- 'Cash'
+account_info[nchar(account_info$Holding) > 8,]$Holding <- 'Cash'
 
 ## strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Holding', 'Quantity'))
@@ -104,17 +102,25 @@ accountd <- account_info[(account_info$Owner == 'D' |
                           account_info$Owner == 'E' ),]
 
 account <- accountd
-account <- split(account, account$Account_Type)
-names(account)
+account_list <- split(account, account$Account_Type)
+names(account_list)
 
-naccounts <- length(names(account))
+naccounts <- length(names(account_list))
 perf_all <- NA
-for (i in 1:naccounts) {
+mv       <- NA
+for (i in 1:(naccounts+1)) {
 
-    ## select portfolio
-    portfolio     <- account[[i]]
-    portfolioname <- names(account[i])
-    cat('portfolio =', i, 'of', naccounts, 
+    if (i == naccounts + 1) {
+        portfolio <- account
+        portfolioname <- 'All Combined'
+        
+    } else {
+        ## select portfolio
+        portfolio     <- account_list[[i]]
+        portfolioname <- names(account_list[i])
+    }
+
+    cat('portfolio =', i, 'of', naccounts+1, 
         '; portfolioname =', portfolioname, '\n')
 
     ## strip out only Holding and Quantitiy
@@ -122,6 +128,9 @@ for (i in 1:naccounts) {
     
     ## COLLAPSE IDENTICAL HOLDINGS (ESPECIALLY FOR COMBINED ACCOUNTS) AND DETERMINE WEIGHTS
     portfolio <- weights(portfolio, portfolioname)
+
+    ## market value for portfolio
+    mv[i] <- sum(portfolio$Market_Value)
 
     ## GET TWRI FOR PORTFOLIO FROM TWRIALL
     twri <- porttwri(twriall, portfolio$Holding)
@@ -155,26 +164,51 @@ for (i in 1:naccounts) {
 ## remove 1st row
 perf_all <- perf_all[-1,]
 
-# create and plot dataframe of ony portfolio accounts and benchmark for summary info
-pp <- select(performance, c('portfolioname', 'duration',
-                            'Holding', 'twrcum', 'std', 'alpha', 'beta', 'P/E Ratio'))
-pp_type  <- perf_all[perf_all$Holding == 'portfolio',]
-pp_bench <- perf_all[perf_all$Holding == 'benchmark',][1,]
+# create dataframe of ony portfolio accounts and benchmark for summary info
+pp <- select(perf_all, c('portfolioname', 'duration',
+                         'Holding', 'twrcum', 'std', 'alpha', 'beta', 'P/E Ratio'))
+## pull out and combine portfolio totals and benchmark stats
+pp_type  <- pp[pp$Holding == 'portfolio',]
+pp_bench <- pp[pp$Holding == 'benchmark',][1,]
 pp_bench$portfolioname <- 'benchmark'
-pp_type <- rbind(perf_type, perf_bench)
+perf_summary <- rbind(pp_type, pp_bench)
+perf_summary$Holding <- NULL
+perf_summary$Market_Value <- c(mv, NA)   # NA is for the benchmark
+perf_summary$Weight       <- perf_summary$Market_Value / sum(perf_summary$Market_Value, na.rm=TRUE)
+rownames(perf_summary) <- 1:nrow(perf_summary)
+perf_summary <- as_tibble(perf_summary)
+printdf(perf_summary, 999)
+
+## create plots
+plotspace(2,1)
+## risk/return plot for all accounts in portfolio
+with(perf_summary, plotfit(twrcum, std, portfolioname,
+                           xlab = 'Standard Deviation',
+                           ylab = 'Cumulative TWR',
+                           interval = 'noline',
+                           suppress = 'yes'))
+## add efficient fontier lines
+eftwrc <- cumprod(eftwri + 1) - 1
+xxxxxxxxxxxx
+xxxxxxxxxxxx
+## alpha/beta plot for all accounts in portfolio
+with(perf_summary, plotfit(beta, alpha, portfolioname,
+                           interval = 'noline',
+                           suppress = 'yes'))
 
 
 
-performance$Holding <- rownames(performance)
-portfolio <- merge(portfolio, performance, by='Holding')
-portfolio$weight <- NULL
-printdf(portfolio, 99)
+## select portfolio for shiny plot
+## account_list <- split(account, account$Account_Type)
+portfolio_list <- split(perf_all, perf_all$portfolioname)
+names(portfolio_list)
+portfolio <- portfolio_list$Invest
 
 ## ## plot interactive
 ## if (os == 'windows') {
 ##     ## following uses plotly which does not work on Chromebook
-##     plot_interactive(rr, 'std', 'twrcum')
-##     plot_interactive(rr, 'beta', 'alpha')
+##     plot_interactive(portfolio, 'std', 'twrcum')
+##     plot_interactive(portfolio, 'beta', 'alpha')
 ## }
 
 shinyplot(as.data.frame(portfolio), 'std', 'twrcum')
