@@ -205,19 +205,6 @@ with(perf_summary, plotfit(beta, alpha, portfolioname,
                            suppress = 'yes'))
 
 
-##---------------------------------
-## investigate
-holding <- c('PTNQ', 'SPYG', 'VOOG', 'JPST', 'LALDX', 'PONAX', 'SPLV')
-weight  <- rep(1/length(holding), length(holding))
-twrib   <- 'SPY'
-period  <- 'months'
-out <- portfolio_eval(holding, weight=weight, twrib=twrib, from=from, to=to, period=period)
-pairsdf(as.data.frame(out$twri))
-
-
-##---------------------------------
-
-
 
 ## select portfolio for shiny plot
 ## account_list <- split(account, account$Account_Type)
@@ -241,7 +228,7 @@ shinyplot(as.data.frame(portfolio), 'std', 'twrcum')
 shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
 
--##-----------------------------------------------------------------------------
+##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
 out <- equityeval('BKI', 'SPY')
 out <- equityeval('BKI', 'SPY', duration='3 years')
