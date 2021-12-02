@@ -1,4 +1,4 @@
-ef <- function(model='Schwab', from=NA, to=NA, efdata=NA,
+ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
                addline=FALSE, col='black', lty=1, pch=3) {
     ## create Efficient Frontier points to assess TWR vs. risk
     
@@ -6,29 +6,42 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA,
     ##       = 'SSP'    uses a blend of US L           and Fixed
 
     ## duration defined from one of the following
-    ## from and to:
-    ##     from  = end of day to start
-    ##     to    = end of day to end
+    ## from, to, and period:
+    ##     from   = end of day to start
+    ##     to     = end of day to end
+    ##     period = 'months' (default), 'days', 'weeks', 'years'
     ## efdata:
     ##     efdata = output from prior execution of ef
     ##              used to extract twri for benchmark so no call needed to yahoo
-    
-    ## US L  = SPY
-    ## US S  = IWM (iShares Russel 2000)
-    ## Inter = EFA (iShares MSCI EAFE of large and mid cap
-    ##              in developed contries excluding US and Canada)
-    ## Fixed = AGG
-    ## Cash  = SHV (iShares Short Treasury Bond, < 1 yr)
+    ##              efdata$twri needs to contain incremental twr values for:
+    ##                  'SPY', 'IWM', 'EFA', 'AGG', 'SHV'
+    ##              where:
+    ##                  US L  = SPY
+    ##                  US S  = IWM (iShares Russel 2000)
+    ##                  Inter = EFA (iShares MSCI EAFE of large and mid cap
+    ##                               in developed contries excluding US and Canada)
+    ##                  Fixed = AGG
+    ##                  Cash  = SHV (iShares Short Treasury Bond, < 1 yr)
 
-    symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
     if (is.na(efdata[1])) {
-        out  <- equityhistory(symbol, from=from, to=to, period='months')
+        ## efdata is not provided so need to get it
+        symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
+        out  <- equityhistory(symbol, from=from, to=to, period=period)
+#        out  <- equityhistory(symbol, period=period)
         twri <- na.omit( out$twr )
+        
     } else {
+        ## efdata is provided so can use it directly
         twri <- efdata$twri
         from <- zoo::index(twri)[1]
         to   <- zoo::index(twri)[nrow(twri)]
     }
+    
+#    ## restrict to duration
+#    ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
+#    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+#    xtsrange
+#    twri <- twri[xtsrange]
 
     if (model == 'test') {
         twri <- head(twri, 4)
