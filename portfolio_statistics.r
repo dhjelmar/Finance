@@ -108,6 +108,7 @@ names(account_list)
 naccounts <- length(names(account_list))
 perf_all <- NA
 mv       <- NA
+portfolio_twri <- NA
 for (i in 1:(naccounts+1)) {
 
     if (i == naccounts + 1) {
@@ -148,11 +149,12 @@ for (i in 1:(naccounts+1)) {
                           twrib = twrib,
                           from  = from,
                           to    = to,
-                          plottype = c('rr', 'ab'),
+                          plottype = c('twrc', 'rr', 'ab', 'twri'),
                           main = paste(portfolioname, '; duration =', duration, sep=' '))
 
     ## collect results
     performance <- out$performance
+    portfolio_twri[i] <- list(out$twri)
     ## performance[order(performance$twrcum),]
     performance$portfolioname <- portfolioname
     performance$duration      <- duration
@@ -163,6 +165,10 @@ for (i in 1:(naccounts+1)) {
 }
 ## remove 1st row
 perf_all <- perf_all[-1,]
+names(portfolio_twri) <- c(names(account_list), 'All Combined')
+
+## look at correlation betweeen each investment in an account
+pairsdf(as.data.frame(portfolio_twri$Roth))
 
 # create dataframe of ony portfolio accounts and benchmark for summary info
 pp <- select(perf_all, c('portfolioname', 'duration',
@@ -190,14 +196,26 @@ with(perf_summary, plotfit(twrcum, std, portfolioname,
                            interval = 'noline',
                            suppress = 'yes'))
 ## add efficient fontier lines
-eftwrc <- cumprod(eftwri + 1) - 1
-##                                           dlh still need to do
-##
+ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)  # dlh something not right
+ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=3)
 ## alpha/beta plot for all accounts in portfolio
 with(perf_summary, plotfit(beta, alpha, portfolioname,
                            bg   = 'grey80',
                            interval = 'noline',
                            suppress = 'yes'))
+
+
+##---------------------------------
+## investigate
+holding <- c('PTNQ', 'SPYG', 'VOOG', 'JPST', 'LALDX', 'PONAX', 'SPLV')
+weight  <- rep(1/length(holding), length(holding))
+twrib   <- 'SPY'
+period  <- 'months'
+out <- portfolio_eval(holding, weight=weight, twrib=twrib, from=from, to=to, period=period)
+pairsdf(as.data.frame(out$twri))
+
+
+##---------------------------------
 
 
 
