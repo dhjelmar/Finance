@@ -14,33 +14,25 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ##  and new stock offerings. Since the adjusted closing price begins where the 
     ##  closing price ends, it can be called a more accurate measure of stocks' value"
     if (is.null(to)) to <- Sys.Date()
-    if (is.null(from)) {
-        ## from not specified so grab earliest to date
-        ## quantmod::getSymbols('SPY', src='yahoo')
-        quantmod::getSymbols(symbol, 
-                             src = source, 
-                             to  = to,
-                             auto.assign = TRUE, 
-                             warnings = FALSE)
-    } else {
-        quantmod::getSymbols(symbol, 
-                             src = source, 
-                             from = from, 
-                             to  = to,
-                             auto.assign = TRUE, 
-                             warnings = FALSE)
-    }
-    
-    ## index of an xts object is the date
-    ## can access using zoo::index()
-    ## dates <- as.Date( zoo::index( get(symbols[1]) ) )
 
+    ## get XTS object for symbol with historical closing price and adjusted price
+    ## quantmod::getSymbols('SPY', src='yahoo')
+    quantmod::getSymbols(symbol, 
+                         src = source, 
+                         auto.assign = TRUE, 
+                         warnings = FALSE)
+    
     ## copy XTS OHLCV format data for 1st symbol to variable asset
     asset <- get(symbol[1])
+
     if (period != 'days') {
         ## convert OHLCV format data to some other period
         asset <- xts::to.period(asset, period=period)
     }
+
+    ## extract dates as a vector of dates
+    dates <- as.Date( zoo::index( asset ) )
+    if (is.null(from)) from  <- dates[1]
     
     ## find column numbers with closing and adjusted prices
     colclose <- which(grepl('Close',    names(asset)))
@@ -80,10 +72,16 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ## twrm <- adjpricem[2:nrows,] / adjpricem[1:(nrows-1),] - 1
     ## ## convert back to xts
     ## ## twr <- xts::as.xts(twrm)
-
+     
+    ## restrict to duration
+    ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
+    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+    xtsrange
+    twr <- twr[xtsrange]
+   
     ## calculate twrcum and standard deviation
-    twrcum <- cumprod(twr+1) - 1
-    std    <- apply(twr, 2, sd, na.rm=TRUE)
+    twrcum <- cumprod(twr+1) / (twr[1,]+1) - 1
+    std    <- apply(twr[2:nrow(twr),], 2, sd, na.rm=TRUE)
     
     return(list(close = closeprice, adjprice = adjprice, twr=twr, twrcum=twrcum, std=std))
 }
