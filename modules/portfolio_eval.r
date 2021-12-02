@@ -19,7 +19,7 @@ portfolio_eval <- function(holding,
                            from,
                            to  ,
                            period='months',
-                           plottype=c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
+                           plottype=c('twrc', 'rr', 'twri', 'ab'),
                            label = 'symbol',
                            main=NULL) {
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
@@ -36,7 +36,8 @@ portfolio_eval <- function(holding,
     ##                  p/e ratio vs reward?
     
     ## get equity history
-    if (is.null(twri))      twri      <- equitytwr(holding, period=period)
+    if (is.null(twri))         twri  <- equitytwr(holding, period=period)
+    if (class(twrib) != 'xts') twrib <- equitytwr(twrib  , period=period)
 
     ## change NA to 0
     twri[is.na(twri)] <- 0
@@ -55,9 +56,12 @@ portfolio_eval <- function(holding,
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
     xtsrange
     twriall <- twriall[xtsrange]
+    ## drop the first date since from is specified at end of 1st date so no TWR that day
+    twriall <- twriall[2:nrow(twriall),]
 
     ## generate efficient frontier module data
-    efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE, col='black', lty=1, pch=3)
+    efdata <- ef(model='Schwab', from=from, to=to, period=period,
+                 addline=FALSE, col='black', lty=1, pch=3)
     nameseftwri <- names(efdata$twri)
     ## efdata will have a result for today while mutual funds will not if prior to close
     ## combine ef twri with others, remove NA, then split apart again
@@ -82,10 +86,8 @@ portfolio_eval <- function(holding,
         plotspace(1,2)
     } else if (length(plottype) == 3) {
         plotspace(1,3)
-    } else if (length(plottype) == 4) {
+    } else if (length(plottype) >= 4) {
         plotspace(2,2)
-    } else if (length(plottype) == 5) {
-        plotspace(2,3)
     }
 
     
@@ -256,10 +258,11 @@ portfolio_eval <- function(holding,
     ## any correlation?
     if (sum(grepl('pairs', plottype) >= 1)) {
         ## identify performance info to output and use in correlation plot
-        pairplot <- select(perf, twrcum, std, alpha, beta, 'P/E Ratio', 'Price/Book', weight)
-        pairsdf(pairplot)
+        ## pairplot <- select(perf, twrcum, std, alpha, beta, 'P/E Ratio', 'Price/Book', weight)
+        ## pairsdf(pairplot)
+        pairsdf(as.data.frame(twriall))
     }
     
-    return(list(twri = twriall, performance=perf))
+    return(list(twri = twriall, performance=perf, efdata=efdata))
 }
 
