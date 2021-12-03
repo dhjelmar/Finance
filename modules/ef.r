@@ -28,7 +28,7 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
         symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
         out  <- equityhistory(symbol, from=from, to=to, period=period)
 #        out  <- equityhistory(symbol, period=period)
-        twri <- na.omit( out$twr )
+        twri <- na.omit( out$twri )
         
     } else {
         ## efdata is provided so can use it directly
@@ -53,9 +53,9 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
         
     ## calculate twrcum and standard deviation
     ## 1st date should have twrcum = 0
-    twrcum_apply <- apply(twri, 2, function(x) { prod(x+1) - 1 }) / (twri[1,] + 1)
-    twrcum <- t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1)
-    twrcum <- tail(twrcum, 1)
+    ## twrcum_apply <- apply(twri, 2, function(x) { prod(x+1) - 1 }) / (twri[1,] + 1)
+    twrcum  <- xts::as.xts( t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1) )
+    twrcuml <- tail(twrcum, 1)
     std    <- apply(twri[2:nrow(twri)], 2, sd)
 
     ## define asset class weights for requested benchmark model
@@ -103,12 +103,10 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
     eftwri <- xts::as.xts( zoo::as.zoo( eftwri, zoo::index(twri)))
 
     ## calculate cumulative twr and standard deviation
-    eftwrcum <- cumprod(eftwri + 1) - 1
+    eftwrcum  <- t(t(cumprod(eftwri+1)) / as.vector(eftwri[1,]+1) - 1)
     eftwrcuml <- t( xts::last(eftwrcum) )
-    ## following also works to just get total cum
-    ## eftwrcum <- as.matrix( apply(eftwri, 2, function(x) { prod(x+1) - 1}) )
     colnames(eftwrcuml) <- 'eftwrcum'
-    efstd <- as.matrix( apply(eftwri, 2, sd) )  # column vector
+    efstd <- as.matrix( apply(eftwri[2:nrow(eftwri),], 2, sd) )  # column vector
     colnames(efstd)  <- 'efstd'
 
     ef <- as.data.frame( cbind(eftwrcuml, efstd) )
@@ -121,3 +119,4 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
                 eftwri=eftwri, ef=ef))
 }
 ## ef(from='2020-12-31', to='2021-11-11')
+## ef(model='simple', from='2015-12-31', to='2021-11-30')

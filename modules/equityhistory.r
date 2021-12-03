@@ -29,10 +29,6 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
         ## convert OHLCV format data to some other period
         asset <- xts::to.period(asset, period=period)
     }
-
-    ## extract dates as a vector of dates
-    dates <- as.Date( zoo::index( asset ) )
-    if (is.null(from)) from  <- dates[1]
     
     ## find column numbers with closing and adjusted prices
     colclose <- which(grepl('Close',    names(asset)))
@@ -72,6 +68,10 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ## twrim <- adjpricem[2:nrows,] / adjpricem[1:(nrows-1),] - 1
     ## ## convert back to xts
     ## ## twri <- xts::as.xts(twrim)
+
+    ## extract dates as a vector of dates
+    dates <- as.Date( zoo::index( twri ) )
+    if (is.null(from)) from  <- dates[1]
      
     ## restrict to duration
     ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
@@ -86,10 +86,13 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     ## xts1 <- xts::xts(cbind(a,b), order.by=Sys.Date()-3:1)
     ## ## calculate cumulative TWR
     ## twrcum_test <- t(t(cumprod(xts1+1)) / as.vector(xts1[1,]+1) - 1)
+    ## class(twrcum_test)
+    ## convert back to xts
+    ## twrcum_test <- xts::as.xts( twrcum_test )
 
     ## calculate twrcum and standard deviation
     ## 1st date should have twrcum = 0
-    twrcum <- t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1)
+    twrcum <- xts::as.xts( t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1) )
     std    <- apply(twri[2:nrow(twri),], 2, sd, na.rm=TRUE)
     
     return(list(close = closeprice, adjprice = adjprice, twri=twri, twrcum=twrcum, std=std))

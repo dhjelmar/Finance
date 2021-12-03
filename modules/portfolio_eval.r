@@ -1,15 +1,21 @@
 portfolio_eval_test <- function(twri=NULL, twrib=NULL) {
     holding <- c('SPLV', 'FAMEX', 'EFA', 'AGG', 'SHV')
-    twri    <- equitytwr(holding)
-    twrib   <- equitytwr('SPY', period='months')
-    out <- portfolio(holding,
-                     c(0.3, 0.2,   0.1,   0.3,  0.1),
-                     twri  = twri,
-                     twrib = twrib,
-                     from = '2015-12-31',
-                     to   = '2021-11-30',
-                     plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
-                     label = 'symbol')
+    ## the following should return:
+    ##    (1) holdings at end of "S&P 500 / AGG EF" line
+    ##    (2) portfolio on halfway pointbetween 3rd and 4th point on that line
+    holding <- c('SWPPX', 'AGG') 
+    period  <- 'months'
+    twri    <- equitytwri(holding, period=period)
+    twrib   <- equitytwri('SPY'  , period=period)
+    out <- portfolio_eval(holding,
+                          weight = rep(1/length(holding), length(holding)),
+                          twri  = twri,
+                          twrib = twrib,
+                          from = '2015-12-31',
+                          to   = '2021-11-30',
+                          plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
+                          ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                          label = 'symbol')
 }
 
 portfolio_eval <- function(holding,
@@ -26,8 +32,8 @@ portfolio_eval <- function(holding,
     ##        weight   = vector of weights for each holding (needs to sum to 1)
     ##        from     = start date
     ##        to       = end date
-    ##        twri     = xts object with output from equitytwr, if provided, for holdings
-    ##        twrib    = xts object with output from equitytwr for bench
+    ##        twri     = xts object with output from equitytwri, if provided, for holdings
+    ##        twrib    = xts object with output from equitytwri for bench
     ##        label    = 'symbol' uses holding symbols on risk/return and beta/alpha plots
     ##                 = 'simple' collapses all holdings to "holding"
     ## create plots of: risk/reward for portfolio, holdings, and benchmark
@@ -36,11 +42,23 @@ portfolio_eval <- function(holding,
     ##                  p/e ratio vs reward?
     
     ## get equity history
-    if (is.null(twri))         twri  <- equitytwr(holding, period=period)
-    if (class(twrib) != 'xts') twrib <- equitytwr(twrib  , period=period)
+    if (is.null(twri)) {
+        twri  <- equitytwri(holding, period=period)
+    } else {
+        ## twri provided but may need to strip out the holding columns
+        twri <- twri[, (colnames(twri) %in% tidyselect::all_of(holding))]
+        if (length(names(twri)) != length(holding)) {
+            ## all requested holdings were not in input twri so grab them
+            twri  <- equitytwri(holding, period=period)
+        }
+    }
+    if (class(twrib)[1] != 'xts') twrib <- equitytwri(twrib  , period=period)
 
-    ## change NA to 0
-    twri[is.na(twri)] <- 0
+    ## ## change NA to 0  
+    ## twri[is.na(twri)] <- 0
+
+    ## if any 
+    twri <- na.omit(twri)
 
     ## create portfolio twri
     portfolio <- twri %*% as.matrix(weight)              # matrix
@@ -56,8 +74,6 @@ portfolio_eval <- function(holding,
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
     xtsrange
     twriall <- twriall[xtsrange]
-    ## drop the first date since from is specified at end of 1st date so no TWR that day
-    twriall <- twriall[2:nrow(twriall),]
 
     ## generate efficient frontier module data
     efdata <- ef(model='Schwab', from=from, to=to, period=period,
@@ -77,9 +93,10 @@ portfolio_eval <- function(holding,
     holdings <- names(twriall)
 
     ## cumulative twr and standard deviation
-    twrcum  <- cumprod(twriall + 1) - 1
+    ## 1st date should have twrcum = 0
+    twrcum  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
     twrcuml <- t( xts::last(twrcum) )
-    std     <- as.matrix( apply(twriall, 2, sd, na.rm=TRUE) )
+    std     <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
 
     ## reserve plotspace if plottype > 1
     if (length(plottype) == 2) {
@@ -93,9 +110,8 @@ portfolio_eval <- function(holding,
     
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
-    if (sum(grepl('twrc', plottype) >= 1)) plot( plotxts(twrcum,
-                                                         main=main) )
-    
+    if (sum(grepl('twrc', plottype) >= 1)) plot( plotxts(twrcum, main=main) )
+
     
     ##-----------------------------------------------------------------------------
     ## create dataframe of holdings, 'portfolio', and 'benchmark'

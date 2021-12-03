@@ -24,6 +24,7 @@ for (f in r_files) {
 ## identify holdings and weights that comprise portfolio
 portfolioname <- 'My Portfolio'
 holding       <- c('PTNQ', 'SPYG', 'VOOG', 'JPST', 'LALDX', 'PONAX', 'SPLV')
+holding       <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
 weight        <- rep(1/length(holding), length(holding))
 
 ## define a benchmark to use in the evaluation
@@ -37,7 +38,14 @@ duration <- paste(from, 'to', to, sep=' ')
 
 ## evaluate portfolio
 out <- portfolio_eval(holding, weight=weight, twrib=twrib,
-                      plottype = c('twrcum', 'rr', 'twri', 'ab'),
+                      plottype = c('twrc', 'rr', 'twri', 'ab'),
+                      from=from, to=to, period=period,
+                      main = paste(portfolioname, '; duration =', duration, sep=' '))
+
+## alternage evalaution providing xts object for twri
+## this avoid again looking up the holding performance
+out <- portfolio_eval(holding, weight=weight, twri=out$twri, twrib=twrib,
+                      plottype = c('twrc', 'rr', 'twri', 'ab'),
                       from=from, to=to, period=period,
                       main = paste(portfolioname, '; duration =', duration, sep=' '))
 
