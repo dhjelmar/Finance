@@ -50,10 +50,13 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
         twri[3,] <- c(0.1, 0.13, 0.1, 0.1, 0.1)
         twri[4,] <- c(0.1, 0.14, 0.11, 0.1, 0.1)
     }
-    
+        
     ## calculate twrcum and standard deviation
-    twrcum <- apply(twri, 2, function(x) { prod(x+1) - 1 })
-    std    <- apply(twri, 2, sd)
+    ## 1st date should have twrcum = 0
+    twrcum_apply <- apply(twri, 2, function(x) { prod(x+1) - 1 }) / (twri[1,] + 1)
+    twrcum <- t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1)
+    twrcum <- tail(twrcum, 1)
+    std    <- apply(twri[2:nrow(twri)], 2, sd)
 
     ## define asset class weights for requested benchmark model
     if (model == 'Schwab') {
