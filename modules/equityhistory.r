@@ -59,32 +59,41 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     names(closeprice) <- symbol
     names(adjprice)   <- symbol
     
-    ## calculate TWR
-    twr  <- adjprice / xts::lag.xts(adjprice, 1) - 1
+    ## calculate incremental TWR
+    twri  <- adjprice / xts::lag.xts(adjprice, 1) - 1
     ## remove 1st row since NA
-    twr <- twr[-1,]
+    twri <- twri[-1,]
     
     ## ## the following does the same with matrices
     ## ## calculate return
     ## ## convert to matrix until maybe someday if I learn xts
     ## adjpricem <- as.matrix(adjprice)
     ## nrows <- nrow(adjpricem)
-    ## twrm <- adjpricem[2:nrows,] / adjpricem[1:(nrows-1),] - 1
+    ## twrim <- adjpricem[2:nrows,] / adjpricem[1:(nrows-1),] - 1
     ## ## convert back to xts
-    ## ## twr <- xts::as.xts(twrm)
+    ## ## twri <- xts::as.xts(twrim)
      
     ## restrict to duration
     ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
     xtsrange
-    twr <- twr[xtsrange]
-   
+    twri <- twri[xtsrange]
+
+    ## figure out how to divide xts object by a vector
+    ## ## create test xts1 object
+    ## a <- rbind(0.1, 0.2, 0.3)
+    ## b <- rbind(0.01, 0.02, 0.03)
+    ## xts1 <- xts::xts(cbind(a,b), order.by=Sys.Date()-3:1)
+    ## ## calculate cumulative TWR
+    ## twrcum_test <- t(t(cumprod(xts1+1)) / as.vector(xts1[1,]+1) - 1)
+
     ## calculate twrcum and standard deviation
-    twrcum <- cumprod(twr+1) / (twr[1,]+1) - 1
-    std    <- apply(twr[2:nrow(twr),], 2, sd, na.rm=TRUE)
+    ## 1st date should have twrcum = 0
+    twrcum <- t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1)
+    std    <- apply(twri[2:nrow(twri),], 2, sd, na.rm=TRUE)
     
-    return(list(close = closeprice, adjprice = adjprice, twr=twr, twrcum=twrcum, std=std))
+    return(list(close = closeprice, adjprice = adjprice, twri=twri, twrcum=twrcum, std=std))
 }
 
-## out <- equityhistory(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
-## twr <- out$twr
+## out  <- equityhistory(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
+## twri <- out$twri
