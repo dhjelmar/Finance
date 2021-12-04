@@ -25,6 +25,7 @@ portfolio.eval <- function(holding,
                            from,
                            to  ,
                            period='months',
+                           na = 'omit',      # 'omit' or 'zero' to handle holdings with short history
                            plottype=c('twrc', 'rr', 'twri', 'ab'),
                            label = 'symbol',
                            main=NULL) {
@@ -34,6 +35,10 @@ portfolio.eval <- function(holding,
     ##        to       = end date
     ##        twri     = xts object with output from equity.twri, if provided, for holdings
     ##        twrib    = xts object with output from equity.twri for bench
+    ##        na       = option to handle holdings with no twri
+    ##                 = 'omit' (default) restrict twri for all holdings to dates where all exist;
+    ##                   this option may result in a crash for the portfolio
+    #                  = 'zero' changes twri from NA to zero for any holding where not defined 
     ##        label    = 'symbol' uses holding symbols on risk/return and beta/alpha plots
     ##                 = 'simple' collapses all holdings to "holding"
     ## create plots of: risk/reward for portfolio, holdings, and benchmark
@@ -54,12 +59,14 @@ portfolio.eval <- function(holding,
     }
     if (class(twrib)[1] != 'xts') twrib <- equity.twri(twrib  , period=period)
 
-    ## ## change NA to 0  
-    ## twri[is.na(twri)] <- 0
-
-    ## if any 
-    twri <- na.omit(twri)
-
+    if (na == 'omit') {
+        ## restrict twri for all holdings to dates where all exist
+        twri <- na.omit(twri)
+    } else {
+        ## change NA to 0  
+        twri[is.na(twri)] <- 0
+    }
+    
     ## create portfolio twri
     portfolio <- twri %*% as.matrix(weight)              # matrix
     ## turn back into xts
