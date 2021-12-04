@@ -31,7 +31,7 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         twrib <- twrib
     }
 
-    if (!is.null(from) | is.null(to)) {
+    if (!is.null(from) | !is.null(to)) {
         ## from and/or to are not defined so do not use to restrict date range
         xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
         xtsrange
