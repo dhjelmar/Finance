@@ -6,10 +6,10 @@
 
 ## Primary modules
 - portfolio.eval = options to plot following for all holdings, the overall portfolio, and a benchmark:
- - twri (incremental TWR) 
- - twrcum (cumulative TWR)
- - risk/return plot (i.e., twrcum vs. standard deviation; not annualized yet)
- - alpha vs. beta
+   - twri (incremental TWR) 
+   - twrcum (cumulative TWR)
+   - risk/return plot (i.e., twrcum vs. standard deviation; not annualized yet)
+   - alpha vs. beta
 
 - equity.eval = options to plot following for one holding and benchmark
 -- twri 
