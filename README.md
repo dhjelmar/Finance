@@ -1,6 +1,6 @@
 # Finance
 
-# Example uses of modules
+# Example use of modules
 - portfolio_statistics_example1.r = simple example for a portfolio with a single account with holdings and weights input as vector
 - portfolio_statistics.r          = complex example for multiple accounts that make up a portfolio; holdings and quantities read from Excel
 
