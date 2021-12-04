@@ -6,7 +6,7 @@
 
 ## Primary modules
 - portfolio.eval = options to plot following for all holdings, the overall portfolio, and a benchmark:
-
+-  -test
 -- twri (incremental TWR)
 -- twrcum (cumulative TWR)
 -- risk/return plot (i.e., twrcum vs. standard deviation; not annualized yet)
