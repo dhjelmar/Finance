@@ -29,19 +29,20 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
         out  <- equity.history(symbol, from=from, to=to, period=period)
 #        out  <- equity.history(symbol, period=period)
         twri <- na.omit( out$twri )
+        twri_in <- NA
         
     } else {
         ## efdata is provided so can use it directly
-        twri <- efdata$twri
-        from <- zoo::index(twri)[1]
-        to   <- zoo::index(twri)[nrow(twri)]
+        twri_in <- efdata$twri
+        twri <- twri_in
+        if (is.na(from)) from <- zoo::index(twri)[1]
+        if (is.na(to))   to   <- zoo::index(twri)[nrow(twri)]
     }
     
-#    ## restrict to duration
-#    ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
-#    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
-#    xtsrange
-#    twri <- twri[xtsrange]
+    ## restrict to duration
+    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+    xtsrange
+    twri <- twri[xtsrange]
 
     if (model == 'test') {
         twri <- head(twri, 4)
@@ -115,8 +116,8 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
       lines(ef$efstd, ef$eftwrcum, type='b', col=col, lty=lty, pch=pch)
     }
     
-    return(list(model=model, weight=weight, twri=twri, twrcum=twrcum, std=std,
-                eftwri=eftwri, ef=ef))
+    return(list(model=model, weight=weight, twri_in=twri_in, twri=twri, twrcum=twrcum, std=std,
+                eftwri=eftwri, ef=ef, from=from, to=to))
 }
 ## ef(from='2020-12-31', to='2021-11-11')
 ## ef(model='simple', from='2015-12-31', to='2021-11-30')
