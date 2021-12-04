@@ -1,4 +1,4 @@
-porttwri <- function(twriall, holding) {
+portfolio.twri <- function(twriall, holding) {
     ## input:   twriall = xts object with twri for many possible holdings
     ##                    index contains dates
     ##                    column for each possible holding symbol

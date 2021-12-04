@@ -1,4 +1,4 @@
-yahoo_scrape <- function(symbol) {
+yahoo.statistics.scrape <- function(symbol) {
     
     ## https://stackoverflow.com/questions/40245464/web-scraping-of-key-stats-in-yahoo-finance-with-r
     url <- paste('https://finance.yahoo.com/quote/', symbol,
@@ -35,5 +35,5 @@ yahoo_scrape <- function(symbol) {
                 peg              = peg))
     
 }
-## out <- yahoo_scrape('AAPL')
+## out <- yahoo.statistics.scrape('AAPL')
 ## peg <- out$valuation[out$valuation$measure == 'PEG Ratio (5 yr expected) 1',]

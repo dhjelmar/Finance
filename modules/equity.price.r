@@ -1,8 +1,8 @@
-equityprice <- function(security, refresh=TRUE, file=NA) {
+equity.price <- function(security, refresh=TRUE, file=NA) {
     
     if (isTRUE(refresh)) {
         ## get current price info for each security
-        allprice <- equityinfo(security, extract=c('Name', 'Previous Close'))
+        allprice <- equity.info(security, extract=c('Name', 'Previous Close'))
         names(allprice) <- c('Date', 'Name', 'Close')
         allprice$Date <- NULL
         ## replace NA closing value for Cash with 1

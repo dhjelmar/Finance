@@ -1,4 +1,4 @@
-equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
+equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
                        duration = c('1 year', '3 years', '5 years'),
                        makeplots = TRUE) {
 
@@ -10,9 +10,9 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     ##                      cumulative twr vs. standard deviation for symbol and benchmark
   
     ## get history
-    out <- equityhistory(symbol, period=period, from=from, to=to)  # 50 works, 60 does not
+    out <- equity.history(symbol, period=period, from=from, to=to)  # 50 works, 60 does not
     twr <- out$twr
-    benchtwr <- equityhistory(bench, period=period)$twr
+    benchtwr <- equity.history(bench, period=period)$twr
     
     ## combine twr and benchmarks to line up dates and remove NA
     both <- na.omit( cbind(twr, benchtwr) )
@@ -63,7 +63,7 @@ equityeval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         }
 
         ## determine alpha and beta for symbol i and create plot
-        out <- alpha_beta(twrx, benchtwrx, 
+        out <- alpha.beta(twrx, benchtwrx, 
                           plot = makeplots, 
                           xlabel = paste('Incremental TWR for', bench, sep=' '),
                           ylabel = paste('Incremental TWR for', symbol, sep=' '),

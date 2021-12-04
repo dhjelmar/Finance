@@ -134,7 +134,7 @@ for (i in 1:(naccounts+1)) {
     mv[i] <- sum(portfolio$Market_Value)
 
     ## GET TWRI FOR PORTFOLIO FROM TWRIALL
-    twri <- porttwri(twriall, portfolio$Holding)
+    twri <- portfolio.twri(twriall, portfolio$Holding)
 
     ## EVALUATE PORTFOLIO
     eftwri$schwab_70_30 = (eftwri$schwab_60_40 + eftwri$schwab_80_20)/2
@@ -143,7 +143,7 @@ for (i in 1:(naccounts+1)) {
     from = '2018-10-30'
     to   = '2021-10-30'
     duration <- paste(from, 'to', to, sep=' ')
-    out <- portfolio_eval(portfolio$Holding,
+    out <- portfolio.eval(portfolio$Holding,
                           portfolio$Weight,
                           twri  = twri,
                           twrib = twrib,
@@ -230,8 +230,8 @@ shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
 ##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
-out <- equityeval('BKI', 'SPY')
-out <- equityeval('BKI', 'SPY', duration='3 years')
+out <- equity.eval('BKI', 'SPY')
+out <- equity.eval('BKI', 'SPY', duration='3 years')
 
 quantmod::getQuote(c('BKI'), src='yahoo', what = quantmod::yahooQF(c('P/E Ratio', 'PEG Ratio')))
 

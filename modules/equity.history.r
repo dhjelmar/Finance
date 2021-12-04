@@ -1,9 +1,9 @@
-equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', period='days') {
+equity.history <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', period='days') {
     ## function returns a dataframe of adjusted prices
     ## period = 'days' (default), 'weeks', 'months', 'quarters', or 'years' 
 
-    ## e.g., equityhistory(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
-    ##       equityhistory(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
+    ## e.g., equity.history(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
+    ##       equity.history(c("SPY","EFA", "IJS", "EEM","AGG"), from='2005-01-01')
 
     ## install.packages('quantmod')
 
@@ -98,5 +98,5 @@ equityhistory <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', peri
     return(list(close = closeprice, adjprice = adjprice, twri=twri, twrcum=twrcum, std=std))
 }
 
-## out  <- equityhistory(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
+## out  <- equity.history(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
 ## twri <- out$twri

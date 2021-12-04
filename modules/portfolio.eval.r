@@ -1,13 +1,13 @@
-portfolio_eval_test <- function(twri=NULL, twrib=NULL) {
+portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
     holding <- c('SPLV', 'FAMEX', 'EFA', 'AGG', 'SHV')
     ## the following should return:
     ##    (1) holdings at end of "S&P 500 / AGG EF" line
     ##    (2) portfolio on halfway pointbetween 3rd and 4th point on that line
     holding <- c('SWPPX', 'AGG') 
     period  <- 'months'
-    twri    <- equitytwri(holding, period=period)
-    twrib   <- equitytwri('SPY'  , period=period)
-    out <- portfolio_eval(holding,
+    twri    <- equity.twri(holding, period=period)
+    twrib   <- equity.twri('SPY'  , period=period)
+    out <- portfolio.eval(holding,
                           weight = rep(1/length(holding), length(holding)),
                           twri  = twri,
                           twrib = twrib,
@@ -18,7 +18,7 @@ portfolio_eval_test <- function(twri=NULL, twrib=NULL) {
                           label = 'symbol')
 }
 
-portfolio_eval <- function(holding,
+portfolio.eval <- function(holding,
                            weight, 
                            twri=NULL,
                            twrib,
@@ -32,8 +32,8 @@ portfolio_eval <- function(holding,
     ##        weight   = vector of weights for each holding (needs to sum to 1)
     ##        from     = start date
     ##        to       = end date
-    ##        twri     = xts object with output from equitytwri, if provided, for holdings
-    ##        twrib    = xts object with output from equitytwri for bench
+    ##        twri     = xts object with output from equity.twri, if provided, for holdings
+    ##        twrib    = xts object with output from equity.twri for bench
     ##        label    = 'symbol' uses holding symbols on risk/return and beta/alpha plots
     ##                 = 'simple' collapses all holdings to "holding"
     ## create plots of: risk/reward for portfolio, holdings, and benchmark
@@ -43,16 +43,16 @@ portfolio_eval <- function(holding,
     
     ## get equity history
     if (is.null(twri)) {
-        twri  <- equitytwri(holding, period=period)
+        twri  <- equity.twri(holding, period=period)
     } else {
         ## twri provided but may need to strip out the holding columns
         twri <- twri[, (colnames(twri) %in% tidyselect::all_of(holding))]
         if (length(names(twri)) != length(holding)) {
             ## all requested holdings were not in input twri so grab them
-            twri  <- equitytwri(holding, period=period)
+            twri  <- equity.twri(holding, period=period)
         }
     }
-    if (class(twrib)[1] != 'xts') twrib <- equitytwri(twrib  , period=period)
+    if (class(twrib)[1] != 'xts') twrib <- equity.twri(twrib  , period=period)
 
     ## ## change NA to 0  
     ## twri[is.na(twri)] <- 0
@@ -136,7 +136,7 @@ portfolio_eval <- function(holding,
     perf$beta  <- NA
     benchi <- as.numeric(twriall[, ncol(twriall)])
     for (i in 1:ncol(twriall)) {
-        out <- alpha_beta(as.numeric(twriall[,i]), benchi, plot=FALSE)
+        out <- alpha.beta(as.numeric(twriall[,i]), benchi, plot=FALSE)
         perf[i,]$alpha <- out$alpha
         perf[i,]$beta  <- out$beta
     }

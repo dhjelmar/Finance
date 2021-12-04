@@ -1,11 +1,11 @@
-equitytwri <- function(security, refresh=TRUE, file=NA, period='months') {
+equity.twri <- function(security, refresh=TRUE, file=NA, period='months') {
     
     if (isTRUE(refresh)) {
         ## get incremental twr for each security
-        ## twri <- equityhistory(security, period='months')  # security[1:50] works, [1:60] does not
+        ## twri <- equity.history(security, period='months')  # security[1:50] works, [1:60] does not
         alltwri <- NA
         for (i in 1:length(security)) {
-            ## equityhistory works for list of 50 symbols but not 60
+            ## equity.history works for list of 50 symbols but not 60
             ## maybe just do 1 at a time for now to keep simple
             cat('i = ', i, 'security =', security[i], '\n')
             if (security[i] == 'Cash') {
@@ -13,7 +13,7 @@ equitytwri <- function(security, refresh=TRUE, file=NA, period='months') {
                 Cash <- rnorm(nrow(alltwri), mean=0, sd=0.00001)
                 alltwri <- cbind(alltwri, Cash)
             } else {
-                new <- equityhistory(security[i], period=period)  # 50 works, 60 does not
+                new <- equity.history(security[i], period=period)  # 50 works, 60 does not
                 alltwri <- cbind(alltwri, new$twri)     # xts cbind nicely lines up dates
             }
         }
@@ -38,4 +38,4 @@ equitytwri <- function(security, refresh=TRUE, file=NA, period='months') {
     
     return(twri=alltwri)
 }
-## equitytwri(c('SPY', 'AAPL'))
+## equity.twri(c('SPY', 'AAPL'))

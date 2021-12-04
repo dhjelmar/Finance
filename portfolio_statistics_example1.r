@@ -37,14 +37,14 @@ to       <- '2021-11-30'
 duration <- paste(from, 'to', to, sep=' ')
 
 ## evaluate portfolio
-out <- portfolio_eval(holding, weight=weight, twrib=twrib,
+out <- portfolio.eval(holding, weight=weight, twrib=twrib,
                       plottype = c('twrc', 'rr', 'twri', 'ab'),
                       from=from, to=to, period=period,
                       main = paste(portfolioname, '; duration =', duration, sep=' '))
 
 ## alternage evalaution providing xts object for twri
 ## this avoid again looking up the holding performance
-out <- portfolio_eval(holding, weight=weight, twri=out$twri, twrib=twrib,
+out <- portfolio.eval(holding, weight=weight, twri=out$twri, twrib=twrib,
                       plottype = c('twrc', 'rr', 'twri', 'ab'),
                       from=from, to=to, period=period,
                       main = paste(portfolioname, '; duration =', duration, sep=' '))
@@ -54,5 +54,5 @@ pairsdf(as.data.frame(out$twri))
 
 ##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
-out <- equityeval('BKI', 'SPY', duration='3 years')
+out <- equity.eval('BKI', 'SPY', duration='3 years')
 out

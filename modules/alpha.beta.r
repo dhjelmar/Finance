@@ -1,4 +1,4 @@
-alpha_beta <- function(twr, twrbench, 
+alpha.beta <- function(twr, twrbench, 
                        plot=FALSE, xlabel=NULL, ylabel=NULL, main=NULL, range=NULL) {
 
     ##-----------------------------------------------------------------------------
@@ -32,5 +32,5 @@ alpha_beta <- function(twr, twrbench,
 ## extract last 5 years of monthly data
 ## AAPL <- as.numeric( xts::last(out$twr$AAPL, n=12*5) )
 ## SPY  <- as.numeric( xts::last(out$twr$SPY,  n=12*5) )
-## alpha_beta(AAPL, SPY)
-## alpha_beta(AAPL, SPY, plot=TRUE)
+## alpha.beta(AAPL, SPY)
+## alpha.beta(AAPL, SPY, plot=TRUE)

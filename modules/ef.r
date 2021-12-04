@@ -26,8 +26,8 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
     if (is.na(efdata[1])) {
         ## efdata is not provided so need to get it
         symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-        out  <- equityhistory(symbol, from=from, to=to, period=period)
-#        out  <- equityhistory(symbol, period=period)
+        out  <- equity.history(symbol, from=from, to=to, period=period)
+#        out  <- equity.history(symbol, period=period)
         twri <- na.omit( out$twri )
         
     } else {

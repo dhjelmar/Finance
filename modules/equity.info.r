@@ -1,4 +1,4 @@
-equityinfo <- function(symbol, extract=NULL) {
+equity.info <- function(symbol, extract=NULL) {
     
     if (is.null(extract)) {
         ## interactive with list of info available
@@ -9,6 +9,6 @@ equityinfo <- function(symbol, extract=NULL) {
     return(out)
 }
 
-## equityinfo('SPY')
-## equityinfo('AAPL', extract='P/E Ratio')
-## equityinfo('AAPL', extract=c('Name (Long)', 'P/E Ratio', 'Price/EPS Estimate Next Year', 'Price/Book', 'Dividend Yield'))
+## equity.info('SPY')
+## equity.info('AAPL', extract='P/E Ratio')
+## equity.info('AAPL', extract=c('Name (Long)', 'P/E Ratio', 'Price/EPS Estimate Next Year', 'Price/Book', 'Dividend Yield'))

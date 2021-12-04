@@ -1,8 +1,8 @@
-equitymodel <- function(symbol, period='months', from=NULL, to=NULL,
+equity.model <- function(symbol, period='months', from=NULL, to=NULL,
                         duration = c('1 year', '3 years', '5 years')) {
 
     ## get history and omit any NA
-    out <- equityhistory(symbol, period=period, from = from)  # 50 works, 60 does not
+    out <- equity.history(symbol, period=period, from = from)  # 50 works, 60 does not
     twr <- na.omit( out$twr )
 
     ## set plotspace to fill by columns first

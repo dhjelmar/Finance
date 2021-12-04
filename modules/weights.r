@@ -14,7 +14,7 @@ weights <- function(portfolio, portfolioname=NULL) {
     ## DETERMINE WEIGHT OF EACH HOLDING
 
     ## obtain closing price data and merge with portfolio
-    closeall   <- equityprice(portfolio$Holding)
+    closeall   <- equity.price(portfolio$Holding)
     closeall$Holding <- rownames(closeall)
     portfolio <- merge(portfolio, closeall, by='Holding')
     portfolio <- select(portfolio, c('Holding', 'Name', 'Quantity', 'Close'))
