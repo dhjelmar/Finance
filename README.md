@@ -12,9 +12,9 @@
    - alpha vs. beta
 
 - equity.eval = options to plot following for one holding and benchmark
--- twri 
--- twrcum
--- twri for equity vs. twri for baseline to obtain alpha and beta
+   - twri 
+   - twrcum
+   - twri for equity vs. twri for baseline to obtain alpha and beta
 
 
 ## Supporting modules
