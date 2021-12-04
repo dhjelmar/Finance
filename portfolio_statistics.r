@@ -57,6 +57,8 @@ if (os == 'windows') {
     account_info <- account_info[account_info$Account_Type != 'Charity',]
     account_info$Account_Type[account_info$Account_Type == 'ira'] <- 'IRA'
     account_info$Account_Type[grepl('FAM', account_info$Account_Name)] <- 'FAM'
+    ## eliminate tiny amount in KD which is an 11/4/21 IBM spinnoff (short history can crash functions)
+    account_info <- account_info[account_info$Holding != 'KD',]
 }
     
 ## strip out any lines with incomplete info
@@ -83,7 +85,7 @@ period     <- 'months'
 
 ## holdings
 holdingall <- unique(account_info$Holding)
-twriall    <- equitytwr(holdingall, period='month')
+twriall    <- equity.twri(holdingall, period='month')
 
 ## benchmark options
 efdata   <- ef('Schwab',        from='1900-01-01', to=Sys.Date(), addline=FALSE)
@@ -143,12 +145,15 @@ for (i in 1:(naccounts+1)) {
     from = '2018-10-30'
     to   = '2021-10-30'
     duration <- paste(from, 'to', to, sep=' ')
+    na <- 'omit'
+    if (portfolioname == 'IRA' | portfolioname == 'All Combined') na <- 'zero'  # IFED too short duration for evaluation
     out <- portfolio.eval(portfolio$Holding,
                           portfolio$Weight,
                           twri  = twri,
                           twrib = twrib,
                           from  = from,
                           to    = to,
+                          na    = na,
                           plottype = c('twrc', 'rr', 'ab', 'twri'),
                           main = paste(portfolioname, '; duration =', duration, sep=' '))
 
@@ -189,15 +194,17 @@ printdf(perf_summary, 999)
 ## create plots
 plotspace(2,1)
 ## risk/return plot for all accounts in portfolio
-with(perf_summary, plotfit(twrcum, std, portfolioname,
+with(perf_summary, plotfit(std, twrcum, portfolioname,
                            xlab = 'Standard Deviation',
                            ylab = 'Cumulative TWR', 
                            bg   = 'grey80',
                            interval = 'noline',
-                           suppress = 'yes'))
+                           suppress = 'yes',
+                           xlimspec = range(std   , out$efdata$std),
+                           ylimspec = range(twrcum, out$efdata$twrcum)))
 ## add efficient fontier lines
-ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)  # dlh something not right
-ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=3)
+ef(model='Schwab', efdata=efdata, from=from, to=to, addline=TRUE, col='black', lty=1, pch=3)
+ef(model='simple', efdata=efdata, from=from, to=to, addline=TRUE, col='black', lty=2, pch=3)
 ## alpha/beta plot for all accounts in portfolio
 with(perf_summary, plotfit(beta, alpha, portfolioname,
                            bg   = 'grey80',
