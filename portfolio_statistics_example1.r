@@ -55,4 +55,5 @@ pairsdf(as.data.frame(out$twri))
 ##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
 out <- equity.eval('BKI', 'SPY', duration='3 years')
+out <- equity.eval('IFED', 'SPY', period='days', duration='3 years')
 out
