@@ -1,10 +1,10 @@
 # Finance
 
-# Example use of modules
+## Example use of modules
 - portfolio_statistics_example1.r = simple example for a portfolio with a single account with holdings and weights input as vector
 - portfolio_statistics.r          = complex example for multiple accounts that make up a portfolio; holdings and quantities read from Excel
 
-# Primary modules
+## Primary modules
 - portfolio.eval = options to plot following for all holdings, the overall portfolio, and a benchmark:
 -- twri (incremental TWR)
 -- twrcum (cumulative TWR)
@@ -17,7 +17,7 @@
 -- twri for equity vs. twri for baseline to obtain alpha and beta
 
 
-# Supporting modules
+## Supporting modules
 - equity.twri = pulls twri values for many holdings into xml object (uses equity.history)
 - equity.history = calculates incremental TWR (twri) and cumulative TWR (twrcum) from Yahoo using quantmod::getSymbols() and stores in XML object
 - ef = adds effective frontier line to a risk/return plot
