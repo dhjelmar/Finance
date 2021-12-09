@@ -200,8 +200,8 @@ portfolio.eval <- function(holding,
         ## add benchmark
         points(perfbench$std, perfbench$twrcum, col='blue', pch=17)
         ## add efficient frontier line
-        out <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
-        out <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
+        efdata.Schwab <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
+        efdata.simple <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
               side=3, line=0.8, cex=1)
         mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
@@ -286,6 +286,8 @@ portfolio.eval <- function(holding,
         pairsdf(as.data.frame(twriall))
     }
     
-    return(list(twri = twriall, performance=perf, efdata=efdata))
+    return(list(twri = twriall, performance=perf,
+                efdata.Schwab=efdata.Schwab,
+                efdata.simple=efdata.simple))
 }
 
