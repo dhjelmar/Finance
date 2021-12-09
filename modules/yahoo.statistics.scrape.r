@@ -8,9 +8,9 @@ yahoo.statistics.scrape <- function(symbol) {
     tableNodes       <- XML::getNodeSet(html, "//table")
 
     valuation        <- XML::readHTMLTable(tableNodes[[1]])
-    dates <- names(out$valuation)[2:ncol(out$valuation)]
+    dates <- names(valuation)[3:ncol(valuation)]
     names(valuation) <- c('measure', 'current', dates)
-    peg <- out$valuation[out$valuation$measure == 'PEG Ratio (5 yr expected) 1',]
+    peg <- valuation[valuation$measure == 'PEG Ratio (5 yr expected)',]
     
     price            <- XML::readHTMLTable(tableNodes[[2]])
     share_statistics <- XML::readHTMLTable(tableNodes[[3]])
@@ -37,3 +37,18 @@ yahoo.statistics.scrape <- function(symbol) {
 }
 ## out <- yahoo.statistics.scrape('AAPL')
 ## peg <- out$valuation[out$valuation$measure == 'PEG Ratio (5 yr expected) 1',]
+
+## ## this works but is a paid service; AAPL symbol is provided as a free example
+## api.token   <- "OeAFFmMliFG5orCUuwAKQ8l4WWFQ67YX"
+## symbol      <- "AAPL.US"
+## ticker.link <- paste("http://nonsecure.eodhistoricaldata.com/api/eod/", symbol,
+##                      "?api_token=", api.token, "&period=m&order=d", sep="")
+## data        <- read.csv(url(ticker.link))
+## head(data)
+
+## ## this also works but not sure what it is doing
+## url <- "http://finance.yahoo.com/webservice/v1/symbols/AAPL/quote?format=json&view=detail"
+## url <- "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=AAPL%2CBTC-USD%2CEURUSD%3DX"
+## req <- curl::curl_fetch_memory(url)
+## str(req)
+## curl::parse_headers(req$headers)
