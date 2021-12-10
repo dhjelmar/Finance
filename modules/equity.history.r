@@ -54,6 +54,10 @@ equity.history <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', per
     ## fix names and return
     names(closeprice) <- symbol
     names(adjprice)   <- symbol
+
+    ## approximate any missing prices
+    closeprice <- zoo::na.approx(closeprice)
+    adjprice   <- zoo::na.approx(adjprice)
     
     ## calculate incremental TWR
     twri  <- adjprice / xts::lag.xts(adjprice, 1) - 1
