@@ -39,6 +39,9 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     }
         
     ## combine twri and benchmarks to line up dates and remove NA
+    ## first make sure the same dates will be considered identical
+    zoo::index(twri)  <- as.Date( zoo::index(twri) )  # align/fix xts dates before cbind merge
+    zoo::index(twrib) <- as.Date( zoo::index(twrib) ) # align/fix xts dates before cbind merge
     both <- na.omit( cbind(twri, twrib) )
 
     ## set plotspace to fill by columns first
