@@ -3,6 +3,9 @@
 ## Example use of modules
 - portfolio_statistics_example1.r = simple example for a portfolio with a single account with holdings and weights input as vector
 - portfolio_statistics.r          = complex example for multiple accounts that make up a portfolio; holdings and quantities read from Excel
+- glassdoor = evaluates an idea from github.com/bhjelmar (see glassdoor.pdf output)
+   - Note: Performance is calculated from Yahoo adjusted prices which do not always appropriately correct for stock splits. Coding does not correct for this yet.
+
 
 ## Primary modules
 - portfolio.eval = options to plot following for all holdings, the overall portfolio, and a benchmark:
@@ -15,10 +18,6 @@
    - twri 
    - twrcum
    - twri for equity vs. twri for baseline to obtain alpha and beta
-
-- glassdoor = evaluates an idea from github.com/bhjelmar (see glassdoor.pdf output)
-   - Note: Performance is calculated from Yahoo adjusted prices which do not always appropriately correct for stock splits. Coding does not correct for this yet.
-
 
 ## Supporting modules
 - equity.twri = pulls twri values for many holdings into xml object (uses equity.history)
