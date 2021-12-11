@@ -16,6 +16,8 @@
    - twrcum
    - twri for equity vs. twri for baseline to obtain alpha and beta
 
+- glassdoor = evaluates an idea from github.com/bhjelmar
+
 
 ## Supporting modules
 - equity.twri = pulls twri values for many holdings into xml object (uses equity.history)
