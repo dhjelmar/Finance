@@ -16,6 +16,9 @@
    - twrcum
    - twri for equity vs. twri for baseline to obtain alpha and beta
 
+- glassdoor = evaluates an idea from github.com/bhjelmar (see glassdoor.pdf output)
+   - Note: Performance is calculated from Yahoo adjusted prices which do not always appropriately correct for stock splits. Coding does not correct for this yet.
+
 
 ## Supporting modules
 - equity.twri = pulls twri values for many holdings into xml object (uses equity.history)
