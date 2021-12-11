@@ -51,6 +51,7 @@ portfolio.eval <- function(holding,
         twri  <- equity.twri(holding, period=period)
     } else {
         ## twri provided but may need to strip out the holding columns
+        twri_provided <- TRUE
         twri <- twri[, (colnames(twri) %in% tidyselect::all_of(holding))]
         if (length(names(twri)) != length(holding)) {
             ## all requested holdings were not in input twri so grab them
@@ -126,7 +127,7 @@ portfolio.eval <- function(holding,
     colnames(out) <- 'Holding'
     if (label == 'symbol') {
         ## use holding symbols on risk/return and beta/alpha plots
-        out$lable <- out$Holding
+        out$label <- out$Holding
     } else {
         ## use labels of 'holding', 'portfolio', or 'benchmark' on plot
         out$label <- 'holding'
@@ -151,18 +152,22 @@ portfolio.eval <- function(holding,
 
     ##-----------------------------------------------------------------------------
     ## add p/e ratio and other stats to perf
-    out <- quantmod::getQuote(holdings, src='yahoo',
-                              what = quantmod::yahooQF(c('Previous Close',
-                                                         'P/E Ratio',
-                                                         'Price/EPS Estimate Next Year',
-                                                         'Price/Book',
-                                                         'EPS',
-                                                         '50-day Moving Average',
-                                                         '200-day Moving Average')))
-    out$'Trade Time' <- NULL
-    outname <- names(out)
-    names(out) <- c('close', outname[2:ncol(out)])
-    perf <- cbind(perf, out)
+    if (isFALSE(twri_provided)) {
+        out <- quantmod::getQuote(holdings, src='yahoo',
+                                  what = quantmod::yahooQF(c('Previous Close',
+                                                             'P/E Ratio',
+                                                             'Price/EPS Estimate Next Year',
+                                                             'Price/Book',
+                                                             'EPS',
+                                                             '50-day Moving Average',
+                                                             '200-day Moving Average')))
+        out$'Trade Time' <- NULL
+        outname <- names(out)
+        names(out) <- c('close', outname[2:ncol(out)])
+        perf <- cbind(perf, out)
+    } else {
+        ## do not look for holdings (they may not exist if twri was passed in)
+    }
 
     
     ##-----------------------------------------------------------------------------
