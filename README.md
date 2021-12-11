@@ -16,7 +16,7 @@
    - twrcum
    - twri for equity vs. twri for baseline to obtain alpha and beta
 
-- glassdoor = evaluates an idea from github.com/bhjelmar
+- glassdoor = evaluates an idea from github.com/bhjelmar (see glassdoor.pdf output)
 
 
 ## Supporting modules
