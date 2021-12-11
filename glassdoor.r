@@ -67,12 +67,15 @@ value_last <- 10000
 period     <- 'months'
 
 ## read in twri for portfolio if desired and available
-refresh <- FALSE
+refresh <- TRUE
 if (isFALSE(refresh)) {
   twri_in <- readall('glassdoor_twri.csv')
   rownames(twri_in) <- twri_in$X
   twri_in$X <- NULL
+  ## change dataframe to xts object
   twri_in <- xts::as.xts(twri_in)
+  ## set dates consistent with how zoo and xts want them
+  zoo::index(twri_in) <- as.Date( zoo::index(twri_in))
 }
 
 ## initialize xts objects
@@ -96,7 +99,7 @@ for (i in 1:nrow(holding)) {
     if (isTRUE(refresh)) {
         twri.yeari <- equity.twri(holding.yeari, period=period)
     } else {
-        twri.yeari <- twri_in[yeari]
+        twri.yeari <- twri_in[yeari][,1:nhold]
     }
 
     ## ## until list of holdings gets fixed, set NA to zero
@@ -129,8 +132,10 @@ for (i in 1:nrow(holding)) {
 ## remove 1st NA line
 twri <- twri[-1,]
 dates <- zoo::index(twri)
-twridf <- as.data.frame(dates=dates, twri)
-write.csv(twridf, 'glassdoor_twri.csv')
+if (isTRUE(refresh)) {
+    twridf <- as.data.frame(dates=dates, twri)
+    write.csv(twridf, 'glassdoor_twri.csv')
+}
 
 ## print start of each year to make sure all selected securities are available
 start.years <- twri[xts:::startof(twri, "years")]
@@ -154,18 +159,30 @@ std     <- t( as.matrix( apply(twri[2:nrow(twri),], 2, sd, na.rm=TRUE) ) )
 ##     plot( plotxts(twrc.yeari) )
 ## }
 
+createpdf <- FALSE
+if (isTRUE(createpdf)) pdf(file = "glassdoor.pdf", onefile = TRUE,          # creates a multi-page PDF file
+                           ## file = "glassdoor%03d.pdf", onefile = FALSE,  # creates multiple PDF files
+                           width = 9,  # The width of the plot in inches
+                           height = 7) # The height of the plot in inches
+
+## create risk/return plot
+portfolioname <- 'Glassdoor'
+from  <- '2008-12-31'
+to    <- '2021-12-31'
+duration <- paste(from, 'to', to, sep=' ')
+out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri, twrib='SPY',
+                      plottype = c('twrc', 'rr', 'twri', 'ab'),
+                      from=from, to=to, period=period,
+                      main = paste(portfolioname, '; duration =', duration, sep=' '))
+
+## evaluate portfolio as if it was a mutual fund
+out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio)
 
 ## plot performance during each year of portfolio
-portfolioname <- 'Glassdoor'
 twrib <- equity.twri('SPY')
-createpdf <- TRUE
-if (isTRUE(createpdf)) 
-  pdf(file = "glassdoor.pdf", onefile = TRUE,        # creates a multi-page PDF file
-    # file = "glassdoor%03d.pdf", onefile = FALSE, # creates multiple PDF files
-    width = 9,  # The width of the plot in inches
-    height = 7) # The height of the plot in inches
 for (i in 1:nrow(holding)) {
     yeari <- as.character(holding[i,1])
+    cat('Creating plots for year =', yeari, '\n')
     yearim1 <- as.character(holding[i,1]-1)
     symbols <- holding[i,2:(nhold+1)]
     from  <- paste(yearim1, '-12-31', sep='')
@@ -179,7 +196,4 @@ for (i in 1:nrow(holding)) {
                           main = paste(portfolioname, '; duration =', duration, sep=' '))
 }
 
-## evaluate portfolio as if it was a mutual fund
-out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio)
-
-dev.off() # close external pdf (or jpg) file
+if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
