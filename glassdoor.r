@@ -196,8 +196,6 @@ for (i in 1:nrow(holding)) {
                           main = paste(portfolioname, '; duration =', duration, sep=' '))
 }
 
-if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
-
 ## collect results
 twrc_EOY <- matrix(NA, nrow=nrow(holding), ncol=nhold+2)
 colnames(twrc_EOY) <- c(names(holding), 'portfolio')
@@ -217,6 +215,8 @@ twrc_EOY
 twrc_EOY_long$year <- as.numeric(twrc_EOY_long$year)
 twrc_EOY_long$twrc <- as.numeric(twrc_EOY_long$twrc)
 
+plotspace(1,1)
+
 barit <- function(df, year) {
     ## create bar chart of holdings kept more than 1 year
     df <- df[df$year >= year,]
@@ -224,21 +224,33 @@ barit <- function(df, year) {
     names(df) <- c('holding', 'count')
     df <- df[order(df$count),]
     ## df <- df[df$count > 1,]
-    barplot(df$count, names.arg=df$holding, las=2)
+    
+    ## the following works interactively but skips every other label when write to pdf
+    ## barplot(df$count, names.arg=df$holding, las=2)
+    
+    ## this seems to work for both
+    midpts <- barplot(df$count, names.arg=df$holding, xaxt="n")
+    text(x=midpts, y=-0.7, df$holding, cex=0.8, srt=90, xpd=TRUE)
+    
     return(df)
 }
 barit(twrc_EOY_long, 2008)
 
-## plot holdings held at least freq years since year
 plotoften <- function(df, year, freq) {
+    ## plot holdings held at least freq years since year
     df <- df[df$year >= year,]
     often <- aggregate(df$year, by=list(df$holding), FUN=length)  # FUN=count does not work
     often <- as.character(often[often$x >= freq, 1] )
     df <- df[df$holding %in% tidyselect::all_of(often),]
-    plotfit(df$year, df$twrc, df$holding, multifit = TRUE, interval = 'line')
+    plotfit(df$year, df$twrc, df$holding, multifit = TRUE, interval = 'line',
+            main=paste('Holdings since', year, 'held at least', freq, 'times', sep=' '))
     return(df)
     }
 df <- plotoften(twrc_EOY_long, 2008, 4)
+
+
+if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
+
 shinyplot(df, 'year', 'twrc')
 
 ## shares <- '
