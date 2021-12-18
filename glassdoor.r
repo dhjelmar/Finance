@@ -53,7 +53,7 @@ value_last <- 10000
 period     <- 'days'
 
 ## read in twri for portfolio if desired and available
-refresh <- TRUE
+refresh <- FALSE
 if (isFALSE(refresh)) {
   twri.csv <- readall('glassdoor_twri.csv')
   rownames(twri.csv) <- twri.csv$X
@@ -68,8 +68,8 @@ if (isFALSE(refresh)) {
 
 ## initialize xts objects
 twri_list <- NA
-twri      <- NA
-twrc      <- NA
+## twri      <- NA
+twrc_list <- NA
 value     <- NA
 
 ## evaluate portfolio
@@ -90,6 +90,7 @@ for (i in 1:nrow(holding)) {
         twri.yeari <- equity.twri(holding.yeari, period=period)
     } else {
         twri.yeari <- twri.csv[,1:nhold]   # 1:nhold needed to not include "portfolio"
+        names(twri.yeari) <- as.character( holding[i, 2:(nhold+1)] )
     }
     twri.yeari <- twri.yeari[xtsrange]
 
@@ -103,10 +104,11 @@ for (i in 1:nrow(holding)) {
     ## may want to drop twri from this loop at some point
     ## and construct it later from twri_list[i], but keeping for now
     twri_list[i]  <- list(twri.yeari)
-    
+
     ## cumulative twr for yeari for each holding
-    ## 1st date should have twrcum = 0
-    twrc.yeari  <- xts::as.xts( t(t(cumprod(twri.yeari+1)) / as.vector(twri.yeari[1,]+1) - 1) )
+    ## 1st date should have twrc = 0
+    twrc.yeari   <- xts::as.xts( t(t(cumprod(twri.yeari+1)) / as.vector(twri.yeari[1,]+1) - 1) )
+    twrc_list[i] <- list(twrc.yeari)
 
     ## calculate value of portfolio
     value.yeari <- twrc.yeari * value_last
@@ -170,7 +172,8 @@ duration <- paste(from, 'to', to, sep=' ')
 out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri, twrib='SPY',
                       plottype = c('twrc', 'rr', 'twri', 'ab'),
                       from=from, to=to, period=period,
-                      main = paste(portfolioname, '; duration =', duration, sep=' '))
+                      main = paste(portfolioname, ': ', duration, 
+                                   '; period=', period, sep=''))
 
 ## evaluate portfolio as if it was a mutual fund
 out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio, period=period)
@@ -195,7 +198,48 @@ for (i in 1:nrow(holding)) {
 
 if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
 
+## collect results
+twrc_EOY <- matrix(NA, nrow=nrow(holding), ncol=nhold+2)
+colnames(twrc_EOY) <- c(names(holding), 'portfolio')
+twrc_EOY_long <- as.data.frame( matrix(NA, nrow=nrow(holding), ncol=3) )
+names(twrc_EOY_long) <- c('year', 'holding', 'twrc')
+k <- 0
+for (i in 1:nrow(holding)) {
+  twrc_EOY[i,] <- c(holding[i,1], as.numeric( tail(twrc_list[[i]], 1) ) )
+  for (j in 1:(nhold+1)) {
+      k <- k+1
+      ##                     year        , holding          , twrc
+      twrc_EOY_long[k,] <- c(holding[i,1], names(twrc_list[[i]])[j], twrc_EOY[[i,1+j]])
+  }
+}
+holding
+twrc_EOY
+twrc_EOY_long$year <- as.numeric(twrc_EOY_long$year)
+twrc_EOY_long$twrc <- as.numeric(twrc_EOY_long$twrc)
 
+barit <- function(df, year) {
+    ## create bar chart of holdings kept more than 1 year
+    df <- df[df$year >= year,]
+    df <- aggregate(df$year, by=list(df$holding), FUN=length)  # FUN=count does not work
+    names(df) <- c('holding', 'count')
+    df <- df[order(df$count),]
+    ## df <- df[df$count > 1,]
+    barplot(df$count, names.arg=df$holding, las=2)
+    return(df)
+}
+barit(twrc_EOY_long, 2008)
+
+## plot holdings held at least freq years since year
+plotoften <- function(df, year, freq) {
+    df <- df[df$year >= year,]
+    often <- aggregate(df$year, by=list(df$holding), FUN=length)  # FUN=count does not work
+    often <- as.character(often[often$x >= freq, 1] )
+    df <- df[df$holding %in% tidyselect::all_of(often),]
+    plotfit(df$year, df$twrc, df$holding, multifit = TRUE, interval = 'line')
+    return(df)
+    }
+df <- plotoften(twrc_EOY_long, 2008, 4)
+shinyplot(df, 'year', 'twrc')
 
 ## shares <- '
 ## year    hold1   hold2   hold3   hold4   hold5   hold6   hold7   hold8   hold9   hold10
