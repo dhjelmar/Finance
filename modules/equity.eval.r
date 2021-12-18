@@ -95,7 +95,7 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
                           xlabel = paste('Incremental TWR for', bench, sep=' '),
                           ylabel = paste('Incremental TWR for', symbol, sep=' '),
                           range  = range(twrix, twribx, na.rm = TRUE),
-                          main   = durationi)
+                          main   = paste(durationi, '; period=', period, sep=''))
         alpha[i] <- out$alpha
         beta[i]  <- out$beta
         
