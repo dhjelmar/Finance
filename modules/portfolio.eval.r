@@ -27,8 +27,10 @@ portfolio.eval <- function(holding,
                            period='months',
                            na = 'omit',      # 'omit' or 'zero' to handle holdings with short history
                            plottype=c('twrc', 'rr', 'twri', 'ab'),
+                           arrange = TRUE,   # TRUE figures out best layout
                            label = 'symbol',
                            main=NULL) {
+
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
     ##        weight   = vector of weights for each holding (needs to sum to 1)
     ##        from     = start date
@@ -95,7 +97,9 @@ portfolio.eval <- function(holding,
     ## fix efdata$twri names in case they got renamed in cbind (i.e., if duplicates)
     names(efdata$twri) <- nameseftwri
     ## recall ef to fix other list parameters in efdata using new twri range
-    efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)    
+    efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)
+    efdata.Schwab <- efdata
+    efdata.simple <- NA
 
     ## extract names
     holdings <- names(twriall)
@@ -106,15 +110,16 @@ portfolio.eval <- function(holding,
     twrcuml <- t( xts::last(twrcum) )
     std     <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
 
-    ## reserve plotspace if plottype > 1
-    if (length(plottype) == 2) {
-        plotspace(1,2)
-    } else if (length(plottype) == 3) {
-        plotspace(1,3)
-    } else if (length(plottype) >= 4) {
-        plotspace(2,2)
+    if (isTRUE(arrange)) {
+        ## reserve plotspace if plottype > 1
+        if (length(plottype) == 2) {
+            plotspace(1,2)
+        } else if (length(plottype) == 3) {
+            plotspace(1,3)
+        } else if (length(plottype) >= 4) {
+            plotspace(2,2)
+        }
     }
-
     
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
