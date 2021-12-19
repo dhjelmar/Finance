@@ -11,7 +11,7 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
                           weight = rep(1/length(holding), length(holding)),
                           twri  = twri,
                           twrib = twrib,
-                          from = '2015-12-31',
+                          from = '2016-12-31',
                           to   = '2021-11-30',
                           plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
@@ -50,6 +50,7 @@ portfolio.eval <- function(holding,
     
     ## get equity history
     if (is.null(twri)) {
+        twri_provided <- FALSE
         twri  <- equity.twri(holding, period=period)
     } else {
         ## twri provided but may need to strip out the holding columns
@@ -60,8 +61,11 @@ portfolio.eval <- function(holding,
             twri  <- equity.twri(holding, period=period)
         }
     }
-    if (class(twrib)[1] != 'xts') twrib <- equity.twri(twrib  , period=period)
-
+    if (class(twrib)[1] != 'xts') {
+        ## symbol provided rather than XTS object
+        twrib <- equity.twri(twrib  , period='days')
+    }
+    
     if (na == 'omit') {
         ## restrict twri for all holdings to dates where all exist
         twri <- na.omit(twri)
