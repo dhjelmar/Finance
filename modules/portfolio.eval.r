@@ -68,7 +68,7 @@ portfolio.eval <- function(holding,
 
     ## check that twri and twrib have the same dates; extract new twrib if needed
     ## note the correction only works if twrib can be found on Yahoo
-    if (zoo::index(twri) != zoo::index(twrib)) {
+    if (!identical(zoo::index(twri), zoo::index(twrib))) {
         ## redo twrib to match the twri index
         twri.dates  <- zoo::index(twri)
         twrib.dates <- zoo::index(twrib)
