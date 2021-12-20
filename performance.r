@@ -34,9 +34,6 @@ map  <- readall(filename, sheet = 'Map',    header.row=3)
 valuesheet <- readall(filename, sheet = 'value', header.row=6, rename=FALSE)
 twrsheet   <- readall(filename, sheet = 'TWR',   header.row=6, rename=FALSE)
 
-## names of accounts
-accounts <- names(twrsheet)
-
 ##-----------------------------------------------------------------------------
 ## CONVERT tibble TO XTS
 ## first change to dateframe so can set rownames as dates
@@ -70,19 +67,21 @@ adjust <- unlist( purrr::pmap(list(x = valuedates), function(x) closest(x)) )
 zoo::index(valuesheet) <- as.Date(adjust, origin='1970-01-01')
 
 adjust <- unlist( purrr::pmap(list(x = twrdates), function(x) closest(x)) )
-zoo::index(twrsheet) <- as.Date(adjust, origin='1970-01-01')
+dates  <- as.Date(adjust, origin='1970-01-01')
+zoo::index(twrsheet) <- dates
 
 ##-----------------------------------------------------------------------------
 ## define portfolios created from combining accounts
+accounts <- names(twrsheet)
 print(accounts)
 church <- c('1111', '3-33-333')
-period        <- 'months'
 
 ## select a portfolio and timeframe for the evaluation
 portfolio     <-  church
 portfolioname <- 'Church'
 from          <- '2016-12-31'
 to            <- '2021-12-31'
+period        <- 'months'
 duration      <- paste(from, 'to', to, sep=' ')
 
 ## determine weight of each portion of portfolio
@@ -93,18 +92,20 @@ weight        <- current.value / sum(current.value)
 ## create value plot
 plotspace(3,1)
 plotxts(value)
+## period = days used in the following so there is a unique value for every date read from Excel
+## all date entries are consisered equally in evaluation of standard deviation, alpha, and beta
 out <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
                       plottype = c('twrc', 'twri'), arrange=FALSE,
                       from=from, to=to, period=period,
                       main = paste(portfolioname, ': ', duration, 
-                                   '; period=', period, sep=''))
+                                   '; period = ', period, sep=''))
 
 ## create risk/return plot
 out <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
                       plottype = c('rr', 'ab'),
                       from=from, to=to, period=period,
                       main = paste(portfolioname, ': ', duration, 
-                                   '; period=', period, sep=''))
+                                   '; period = ', period, sep=''))
 twri <- out$twri
 
 ## evaluate portfolio as if it was a mutual fund
