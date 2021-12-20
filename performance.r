@@ -28,11 +28,19 @@ for (f in r_files) {
 
 ##-----------------------------------------------------------------------------
 ## READ DATA
-filename <- 'performance_data_example.xlsx'
-map  <- readall(filename, sheet = 'Map',    header.row=3)
-## account <- map[, c('Account_Number', 'Owner', 'Owner_Group', 'Account_Name')]
-valuesheet <- readall(filename, sheet = 'value', header.row=6, rename=FALSE)
-twrsheet   <- readall(filename, sheet = 'TWR',   header.row=6, rename=FALSE)
+if (os == 'unix') {
+    filename <- 'performance_data_example.xlsx'
+    map  <- readall(filename, sheet = 'Map',    header.row=3)
+    valuesheet <- readall(filename, sheet = 'value', header.row=6, rename=FALSE)
+    twrsheet   <- readall(filename, sheet = 'TWR',   header.row=6, rename=FALSE)
+} else {
+    filename <- 'performance_data.xlsx'
+    map  <- readall(filename, sheet = 'Map',    header.row=3)
+    valuesheet <- readall(filename, sheet = 'valueR', header.row=5, data.start.row=7, rename=FALSE)
+    twrsheet   <- readall(filename, sheet = 'TWRR',   header.row=5, data.start.row=7, rename=FALSE)
+    names(valuesheet) <- c('Date', names(valuesheet)[2:length(names(valuesheet))])
+    names(twrsheet)   <- c('Date', names(twrsheet)[2:length(names(twrsheet))])
+}
 
 ##-----------------------------------------------------------------------------
 ## CONVERT tibble TO XTS
@@ -75,17 +83,24 @@ zoo::index(twrsheet) <- dates
 accounts <- names(twrsheet)
 print(accounts)
 church <- c('1111', '3-33-333')
+church <- accounts[1:5]
+de     <- accounts[grepl('^D |^E |^DE', accounts)]
+p      <- accounts[grepl('^P'         , accounts)]
 
 ## select a portfolio and timeframe for the evaluation
 portfolio     <-  church
 portfolioname <- 'Church'
+
+portfolio     <- de
+portfolioname <- 'DE'
+
 from          <- '2016-12-31'
 to            <- '2021-12-31'
 period        <- 'months'
 duration      <- paste(from, 'to', to, sep=' ')
 
 ## determine weight of each portion of portfolio
-value         <- valuesheet[,names(valuesheet) %in% church]
+value         <- valuesheet[,names(valuesheet) %in% portfolio]
 current.value <- as.numeric( tail(value, 1) )
 weight        <- current.value / sum(current.value)
 
