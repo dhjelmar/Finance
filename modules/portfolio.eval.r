@@ -63,9 +63,26 @@ portfolio.eval <- function(holding,
     }
     if (class(twrib)[1] != 'xts') {
         ## symbol provided rather than XTS object
-        twrib <- equity.twri(twrib  , period='days')
+        twrib <- equity.twri(twrib  , period=period)        
     }
-    
+
+    ## check that twri and twrib have the same dates; extract new twrib if needed
+    ## note the correction only works if twrib can be found on Yahoo
+    if (zoo::index(twri) != zoo::index(twrib)) {
+        ## redo twrib to match the twri index
+        twri.dates  <- zoo::index(twri)
+        twrib.dates <- zoo::index(twrib)
+        ## find twri in twrib
+        first.index <- which(grepl(twri.dates[1], twrib.dates)) - 1
+        first       <- twrib.dates[first.index]
+        ## use date from next earlier twri as the adjusted date for equity.twri
+        date <- c(first, twri.dates)
+        twrib <- equity.twri(names(twrib), adjdates = date)        
+    }
+
+    ## The following would be incorrect for intermediate missing dates
+    ## but that should not genearlly be a problem. Not a problem for
+    ## missing dates all at the beginning.
     if (na == 'omit') {
         ## restrict twri for all holdings to dates where all exist
         twri <- na.omit(twri)
