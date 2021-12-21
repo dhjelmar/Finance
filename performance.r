@@ -79,6 +79,13 @@ dates  <- as.Date(adjust, origin='1970-01-01')
 zoo::index(twrsheet) <- dates
 
 ##-----------------------------------------------------------------------------
+## create verification data set
+verify01.twri <- equity.twri(c('AGG', 'SPY'))['2020']
+vdate         <- zoo::index(verify01.twri)
+vdate         <- c(as.Date('2019-12-31'), vdate[1:2], as.Date('2020-03-20'), vdate[3:12])
+verify02.twri <- equity.twri(c('AGG', 'SPY'), adjdates = vdate)
+
+##-----------------------------------------------------------------------------
 ## define portfolios created from combining accounts
 accounts <- names(twrsheet)
 print(accounts)
@@ -93,6 +100,8 @@ portfolioname <- 'Church'
 
 portfolio     <- de
 portfolioname <- 'DE'
+
+portfolio     <- 
 
 from          <- '2016-12-31'
 to            <- '2021-12-31'
