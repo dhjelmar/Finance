@@ -1,8 +1,8 @@
 # Finance
 
 ## Example use of modules
-- portfolio_statistics_example1 = simple example for a portfolio with a single account with holdings and weights input as vector
-- portfolio_statistics          = complex example for multiple accounts that make up a portfolio; holdings and quantities read from Excel
+- backtest_simple_example = simple example for a portfolio with a single account with holdings and weights input as vector
+- backtest = more complicated example for multiple accounts that make up a portfolio; holdings and quantities read from Excel
 - glassdoor = evaluates an idea from github.com/bhjelmar (see glassdoor.pdf output)
    - Note: Performance is calculated from Yahoo adjusted prices which do not always appropriately correct for stock splits. Coding does not correct for this yet.
 - performance = Evaluates performance of a portfolio where monthly (in general) TWR values for the accounts in the portfolio are read from Excel (plots value, cumulative TWR, incremental TWR, risk vs. return, and alpha/beta)
