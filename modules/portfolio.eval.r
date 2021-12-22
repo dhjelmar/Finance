@@ -1,21 +1,89 @@
 portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
-    holding <- c('SPLV', 'FAMEX', 'EFA', 'AGG', 'SHV')
+
+    holding <- c('SWPPX', 'AGG') 
+    from <- '2016-12-30'   # 2016-12-31 is a Saturday
+    to   <- '2021-11-30'
+    
+    ##-----------------------------------------------------------------------------
+    ## verification 1
+    ## test case where look up holding and baseline twri from Yahoo
     ## the following should return:
     ##    (1) holdings at end of "S&P 500 / AGG EF" line
     ##    (2) portfolio on halfway pointbetween 3rd and 4th point on that line
-    holding <- c('SWPPX', 'AGG') 
+    twrib   <- 'SPY'
     period  <- 'months'
+    out1 <- portfolio.eval(holding,
+                           weight = rep(1/length(holding), length(holding)),
+                           twrib = twrib,
+                           from = from,
+                           to   = to,
+                           plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
+                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           label = 'symbol',
+                           main  = 'verification 1')
+
+    ##-----------------------------------------------------------------------------
+    ## verification 2
+    ## where supply twri xts objects
+    ## need to see get the same results as the first case
     twri    <- equity.twri(holding, period=period)
     twrib   <- equity.twri('SPY'  , period=period)
-    out <- portfolio.eval(holding,
-                          weight = rep(1/length(holding), length(holding)),
-                          twri  = twri,
-                          twrib = twrib,
-                          from = '2016-12-31',
-                          to   = '2021-11-30',
-                          plottype = c('twrc', 'rr', 'twri', 'ab', 'pe', 'pairs'),
-                          ## plottype = c('twrc', 'rr', 'twri', 'ab'),
-                          label = 'symbol')
+    out2 <- portfolio.eval(holding,
+                           weight = rep(1/length(holding), length(holding)),
+                           twri  = twri,
+                           twrib = twrib,
+                           from = from,
+                           to   = to,
+                           plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           label = 'symbol',
+                           main  = 'verification 2')
+
+    ##-----------------------------------------------------------------------------
+    ## verification 3
+    ## supply twri but short by the starting date
+    twri <- out2$twri     # twri starts from 2016-12-30
+    out3 <- portfolio.eval(holding,
+                           weight = rep(1/length(holding), length(holding)),
+                           twri  = twri,
+                           twrib = twrib,
+                           from  = from,
+                           to    = to, 
+                           plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           label = 'symbol',
+                           main  = 'verification 3')
+
+    ##-----------------------------------------------------------------------------
+    ## verification 4
+    ## supply twri with non-regular period
+
+    ## first create an xts object as if it was read in with a twri for each date to be used in twrc
+    ## i.e., missing the 1st row
+    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+    twri  <- equity.twri(holding)[xtsrange]
+    twri  <- twri[-1]
+    ## if planning to supply twri, need to add an extra row for the "from" date
+    twri.from <- head(twri, 1)
+    zoo::index(twri.from) <- as.Date(from)
+    twri <- rbind(twri.from, twri)
+    twri[1,] <- 0  # zero out the row
+    ## 
+    vdate <- zoo::index(twri)
+    vdate <- c(as.Date(vdate[1:38],
+               as.Date('2020-03-20'), vdate[39:length(vdate)]))
+    twri  <- equity.twri(holding, adjdates = vdate)
+    out4 <- portfolio.eval(holding,
+                           weight = rep(1/length(holding), length(holding)),
+                           twri  = twri,
+                           twrib = twrib,
+                           from = from,
+                           to   = to,
+                           plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                           label = 'symbol',
+                           main  = 'verification 4')
+
 }
 
 portfolio.eval <- function(holding,
@@ -66,20 +134,6 @@ portfolio.eval <- function(holding,
         twrib <- equity.twri(twrib  , period=period)        
     }
 
-    ## check that twri and twrib have the same dates; extract new twrib if needed
-    ## note the correction only works if twrib can be found on Yahoo
-    if (!identical(zoo::index(twri), zoo::index(twrib))) {
-        ## redo twrib to match the twri index
-        twri.dates  <- zoo::index(twri)
-        twrib.dates <- zoo::index(twrib)
-        ## find twri in twrib
-        first.index <- which(grepl(twri.dates[1], twrib.dates)) - 1
-        first       <- twrib.dates[first.index]
-        ## use date from next earlier twri as the adjusted date for equity.twri
-        date <- c(first, twri.dates)
-        twrib <- equity.twri(names(twrib), adjdates = date)        
-    }
-
     ## The following would be incorrect for intermediate missing dates
     ## but that should not genearlly be a problem. Not a problem for
     ## missing dates all at the beginning.
@@ -89,6 +143,20 @@ portfolio.eval <- function(holding,
     } else {
         ## change NA to 0  
         twri[is.na(twri)] <- 0
+    }
+
+    ## check that twri and twrib have the same dates; extract new twrib if needed
+    ## note the correction only works if twrib can be found on Yahoo
+    twri.dates  <- zoo::index(twri)
+    twrib.dates <- zoo::index(twrib)
+    ## find twri in twrib
+    first.index <- which(grepl(twri.dates[1], twrib.dates)) - 1
+    first       <- twrib.dates[first.index]
+    ## use date from next earlier twri as the adjusted date for equity.twri
+    adjdates    <- c(first, twri.dates)
+    if (!identical(twri.dates, twrib.dates)) {
+        ## redo twrib to match the twri index
+        twrib <- equity.twri(names(twrib), adjdates = adjdates)
     }
     
     ## create portfolio twri
@@ -106,18 +174,13 @@ portfolio.eval <- function(holding,
     xtsrange
     twriall <- twriall[xtsrange]
 
-    ## generate efficient frontier module data
-    efdata <- ef(model='Schwab', from=from, to=to, period=period,
-                 addline=FALSE, col='black', lty=1, pch=3)
-    nameseftwri <- names(efdata$twri)
-    ## efdata will have a result for today while mutual funds will not if prior to close
-    ## combine ef twri with others, remove NA, then split apart again
-    temp <- na.omit( cbind(twriall, efdata$twri) )
-    twriall     <- temp[, 1:ncol(twriall)]
-    efdata$twri <- temp[, (ncol(twriall)+1):ncol(temp)]
-    ## fix efdata$twri names in case they got renamed in cbind (i.e., if duplicates)
-    names(efdata$twri) <- nameseftwri
-    ## recall ef to fix other list parameters in efdata using new twri range
+    ## generate efficient frontier module data for same dates as twriall
+    symbol      <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
+    efdata      <- list()  # declares efdata as a list
+    efdata$twri <- equity.twri(symbol, adjdates = adjdates)
+    efdata$twri <- efdata$twri[xtsrange]
+        
+    ## establish other parameters in efdata using the defined efdata$twri
     efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)
     efdata.Schwab <- efdata
     efdata.simple <- NA
