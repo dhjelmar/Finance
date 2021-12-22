@@ -47,7 +47,7 @@ equity.twri <- function(security, refresh=TRUE, file=NA, period='months', adjdat
                 } else {
                     ## specific dates are provided so use period=days
                     new <- equity.history(security[i], period='days')
-                    ## reconstruct twri for specified dates
+                    ## extract adjusted prices
                     adjprice <- new$adjprice[,1]
                     ## combine dates with adjprice
                     adjprice <- cbind(adjprice, adjdates)
