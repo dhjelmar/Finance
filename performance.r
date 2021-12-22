@@ -60,14 +60,14 @@ twrsheet           <- xts::as.xts(twrsheet, order.by=as.Date(rownames(twrsheet))
 ##-----------------------------------------------------------------------------
 ## adjust any month end dates to dates the market is open
 out <- equity.history('SPY', period='days')
-closedates <- as.Date( zoo::index(out$close) )
+market.open <- as.Date( zoo::index(out$close) )
 
 valuedates <- as.Date( zoo::index(valuesheet) )
 twrdates   <- zoo::index(twrsheet)
 
-closest <- function(x, range=closedates) {
-    ## closedates[findInterval(as.Date('2021-01-31'), as.Date(closedates))]
-    closedates[findInterval(as.Date(x), as.Date(closedates))]
+closest <- function(x, range=market.open) {
+    ## market.open[findInterval(as.Date('2021-01-31'), as.Date(market.open))]
+    market.open[findInterval(as.Date(x), as.Date(market.open))]
 }
 ## closest('2021-01-31')
 
@@ -77,13 +77,6 @@ zoo::index(valuesheet) <- as.Date(adjust, origin='1970-01-01')
 adjust <- unlist( purrr::pmap(list(x = twrdates), function(x) closest(x)) )
 dates  <- as.Date(adjust, origin='1970-01-01')
 zoo::index(twrsheet) <- dates
-
-##-----------------------------------------------------------------------------
-## create verification data set
-verify01.twri <- equity.twri(c('AGG', 'SPY'))['2020']
-vdate         <- zoo::index(verify01.twri)
-vdate         <- c(as.Date('2019-12-31'), vdate[1:2], as.Date('2020-03-20'), vdate[3:12])
-verify02.twri <- equity.twri(c('AGG', 'SPY'), adjdates = vdate)
 
 ##-----------------------------------------------------------------------------
 ## define portfolios created from combining accounts
@@ -101,10 +94,12 @@ portfolioname <- 'Church'
 portfolio     <- de
 portfolioname <- 'DE'
 
-portfolio     <- 
+portfolio     <- verify
+portfolioname <- 'verify01'
 
-from          <- '2016-12-31'
-to            <- '2021-12-31'
+
+from          <- '2019-12-31'
+to            <- '2020-12-31'
 period        <- 'months'
 duration      <- paste(from, 'to', to, sep=' ')
 
