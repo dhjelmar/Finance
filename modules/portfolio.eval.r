@@ -211,12 +211,12 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twrcum, main=main) )
         xts <- twrcum
         pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Cumulative TWR', main=main)
-        pp <- xts::addSeries(xts$portfolio, on=1, col=ncol(xts)-1, lwd=2, lty=2)
-        pp <- xts::addSeries(xts$benchmark, on=1, col=ncol(xts)  , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
         pp <- xts::addLegend("topleft",
                              legend.names = names(xts), 
                              lty=c(rep(1, ncol(xts)-2), 2, 2),
-                             col=1:ncol(xts))
+                             col=c(    1:(ncol(xts)-2), 'red', 'black'))
         plot(pp)
     }
     
@@ -345,12 +345,12 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twriall, main=main) )
         xts <- twriall
         pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Incremental TWR', main=main)
-        pp <- xts::addSeries(xts$portfolio, on=1, col=ncol(xts)-1, lwd=2, lty=2)
-        pp <- xts::addSeries(xts$benchmark, on=1, col=ncol(xts)  , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
         pp <- xts::addLegend("topleft",
                              legend.names = names(xts), 
                              lty=c(rep(1, ncol(xts)-2), 2, 2),
-                             col=1:ncol(xts))
+                             col=c(    1:(ncol(xts)-2), 'red', 'black'))
         plot(pp)
     }
     
