@@ -207,8 +207,18 @@ portfolio.eval <- function(holding,
     
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
-    if (sum(grepl('twrc', plottype) >= 1)) plot( plotxts(twrcum, main=main) )
-
+    if (sum(grepl('twrc', plottype) >= 1)) {
+        ## plot( plotxts(twrcum, main=main) )
+        xts <- twrcum
+        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Cumulative TWR', main=main)
+        pp <- xts::addSeries(xts$portfolio, on=1, col=ncol(xts)-1, lwd=2, lty=2)
+        pp <- xts::addSeries(xts$benchmark, on=1, col=ncol(xts)  , lwd=2, lty=2)
+        pp <- xts::addLegend("topleft",
+                             legend.names = names(xts), 
+                             lty=c(rep(1, ncol(xts)-2), 2, 2),
+                             col=1:ncol(xts))
+        plot(pp)
+    }
     
     ##-----------------------------------------------------------------------------
     ## create dataframe of holdings, 'portfolio', and 'benchmark'
@@ -233,7 +243,9 @@ portfolio.eval <- function(holding,
     perf$beta  <- NA
     benchi <- as.numeric(twriall[, ncol(twriall)])
     for (i in 1:ncol(twriall)) {
-        out <- alpha.beta(as.numeric(twriall[,i]), benchi, plot=FALSE)
+        out <- alpha.beta(as.numeric(twriall[2:(nrow(twriall)-1),i]),
+                          benchi[2:(nrow(twriall)-1)],
+                          plot=FALSE)
         perf[i,]$alpha <- out$alpha
         perf[i,]$beta  <- out$beta
     }
@@ -329,15 +341,23 @@ portfolio.eval <- function(holding,
     
     ##-----------------------------------------------------------------------------
     ## plot incremental TWR
-    if (sum(grepl('twri', plottype) >= 1)) plot( plotxts(twriall,
-                                                         main=main) )
-    
+    if (sum(grepl('twri', plottype) >= 1)) {
+        ## plot( plotxts(twriall, main=main) )
+        xts <- twriall
+        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Incremental TWR', main=main)
+        pp <- xts::addSeries(xts$portfolio, on=1, col=ncol(xts)-1, lwd=2, lty=2)
+        pp <- xts::addSeries(xts$benchmark, on=1, col=ncol(xts)  , lwd=2, lty=2)
+        pp <- xts::addLegend("topleft",
+                             legend.names = names(xts), 
+                             lty=c(rep(1, ncol(xts)-2), 2, 2),
+                             col=1:ncol(xts))
+        plot(pp)
+    }
     
     ##-----------------------------------------------------------------------------
     ## alpha/beta plot
 
-    if (sum(grepl('ab', plottype) >= 1)) {
-        
+    if (sum(grepl('ab', plottype) >= 1)) {        
         ## create plot
         xrange <- range(perf$beta)
         xlim   <- c(min(xrange),
@@ -354,8 +374,7 @@ portfolio.eval <- function(holding,
         points(perfbench$beta, perfbench$alpha, col='blue', pch=17)
         ## add subtitle text
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
-              side=3, line=0.75, cex=1)
-        
+              side=3, line=0.75, cex=1)        
     }
 
 
