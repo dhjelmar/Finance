@@ -1,6 +1,6 @@
-plotxts <- function(xts, legendloc='topleft', main=NULL) {
+plotxts <- function(xts, ylabel=NULL, legendloc='topleft', main=NULL) {
     ## plots every column in the XTS object vs. date and adds a legend
-    ylabel  <- deparse(substitute(xts))
+    if (is.null(ylabel)) ylabel  <- deparse(substitute(xts))
     xts::plot.xts(xts, ylab=ylabel, main=main)
     xts::addLegend(legendloc,
                    legend.names = names(xts), 
@@ -8,10 +8,10 @@ plotxts <- function(xts, legendloc='topleft', main=NULL) {
                    col=1:ncol(xts))
 }
 
-plotzoo <- function(zoo, legendloc='topleft') {
+plotzoo <- function(zoo, ylabel=NULL, legendloc='topleft') {
     ## plots every column in the ZOO object vs. date and adds a legend
     ## seems to work on zoo and xts objects
-    ylabel  <- deparse(substitute(zoo))
+    if (is.null(ylabel)) ylabel  <- deparse(substitute(zoo))
     zoo::plot.zoo(zoo,
                   ylab=ylabel,
                   screens=1,
