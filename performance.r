@@ -42,11 +42,11 @@ if (os == 'unix') {
     names(twrsheet)   <- c('Date', names(twrsheet)[2:length(names(twrsheet))])
 }
 
-##-----------------------------------------------------------------------------
 ## CONVERT tibble TO XTS
 ## first change to dateframe so can set rownames as dates
 ## could convert directly to XTS but then, since "Date" is character, 
 ## all matrix columns would be character
+##-----------------------------------------------------------------------------
 valuesheet           <- as.data.frame(valuesheet)
 rownames(valuesheet) <- valuesheet$Date
 valuesheet$Date      <- NULL
@@ -101,12 +101,20 @@ portfolioname <- 'verify01'
 from          <- '2019-12-31'
 to            <- '2020-12-31'
 period        <- 'months'
+xtsrange      <- paste(from, '/' , to, sep='')
 duration      <- paste(from, 'to', to, sep=' ')
 
 ## determine weight of each portion of portfolio
 value         <- valuesheet[,names(valuesheet) %in% portfolio]
 current.value <- as.numeric( tail(value, 1) )
 weight        <- current.value / sum(current.value)
+
+createpdf <- TRUE
+if (isTRUE(createpdf)) pdf(file = "performance.pdf", onefile = TRUE,          # creates a multi-page PDF file
+                           ## file = "performance%03d.pdf", onefile = FALSE,  # creates multiple PDF files
+                           width = 9,  # The width of the plot in inches
+                           height = 7) # The height of the plot in inches
+
 
 ## create value plot
 plotspace(3,1)
@@ -125,11 +133,14 @@ out <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
                       from=from, to=to, period=period,
                       main = paste(portfolioname, ': ', duration, 
                                    '; period = ', period, sep=''))
-twri <- out$twri
 
 ## evaluate portfolio as if it was a mutual fund
-out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio, period=period)
+twri <- twrsheet[,names(twrsheet) %in% portfolio]
+## out <- equity.eval(portfolioname, 'SPY', twri=out$twri$portfolio, period=period)
+out <- equity.eval(portfolioname, 'SPY', twri=twri, period=period)
 
+
+if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
 
 
 
