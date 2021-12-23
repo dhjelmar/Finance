@@ -98,11 +98,10 @@ portfolio     <- verify
 portfolioname <- 'verify01'
 
 
-from          <- '2019-12-31'
-to            <- '2020-12-31'
+from          <- '2020-12'
+to            <- '2021-12'
 period        <- 'months'
 xtsrange      <- paste(from, '/' , to, sep='')
-duration      <- paste(from, 'to', to, sep=' ')
 
 ## determine weight of each portion of portfolio
 value         <- valuesheet[,names(valuesheet) %in% portfolio]
@@ -118,21 +117,29 @@ if (isTRUE(createpdf)) pdf(file = "performance.pdf", onefile = TRUE,          # 
 
 ## create value plot
 plotspace(3,1)
-plotxts(value)
+plotxts(value[xtsrange])
+
+## extract actual from and to to be used in plots based on applying xtsrange
+xts  <- twrsheet[xtsrange]
+from <- zoo::index(xts[1,])
+to   <- zoo::index(xts[nrow(xts),])
+duration      <- paste(from, 'to', to, sep=' ')
+main <- paste(portfolioname, ': ', duration, '; period = ', period, sep='')
+cat('\n', main, '\n\n')
+
+## create cumulative and incremental TWR plots
 ## period = days used in the following so there is a unique value for every date read from Excel
 ## all date entries are consisered equally in evaluation of standard deviation, alpha, and beta
 out <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
                       plottype = c('twrc', 'twri'), arrange=FALSE,
                       from=from, to=to, period=period,
-                      main = paste(portfolioname, ': ', duration, 
-                                   '; period = ', period, sep=''))
+                      main = main)
 
 ## create risk/return plot
 out <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
                       plottype = c('rr', 'ab'),
                       from=from, to=to, period=period,
-                      main = paste(portfolioname, ': ', duration, 
-                                   '; period = ', period, sep=''))
+                      main = main)
 
 ## evaluate portfolio as if it was a mutual fund
 twri <- twrsheet[,names(twrsheet) %in% portfolio]
