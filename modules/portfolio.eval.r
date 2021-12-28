@@ -1,3 +1,6 @@
+## next:
+## - xtsrange rather than from and to
+
 portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
 
     holding <- c('SWPPX', 'AGG') 
@@ -71,7 +74,7 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
     ## 
     vdate <- zoo::index(twri)
     vdate <- c(as.Date(vdate[1:38],
-               as.Date('2020-03-20'), vdate[39:length(vdate)]))
+                       as.Date('2020-03-20'), vdate[39:length(vdate)]))
     twri  <- equity.twri(holding, adjdates = vdate)
     out4 <- portfolio.eval(holding,
                            weight = rep(1/length(holding), length(holding)),
@@ -87,30 +90,52 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
 }
 
 portfolio.eval <- function(holding,
-                           weight, 
-                           twri=NULL,
-                           twrib,
+                           weight    = NA, 
+                           rebalance = 'period',
+                           value     = NA, 
+                           twri      = NULL,
+                           twrib     = 'SPY',
                            from,
                            to  ,
                            period='months',
-                           na = 'omit',      # 'omit' or 'zero' to handle holdings with short history
+                           na = 'omit',
                            plottype=c('twrc', 'rr', 'twri', 'ab'),
                            arrange = TRUE,   # TRUE figures out best layout
                            label = 'symbol',
                            main=NULL) {
 
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
-    ##        weight   = vector of weights for each holding (needs to sum to 1)
-    ##        from     = start date
-    ##        to       = end date
-    ##        twri     = xts object with output from equity.twri, if provided, for holdings
-    ##        twrib    = xts object with output from equity.twri for bench
-    ##        na       = option to handle holdings with no twri
-    ##                 = 'omit' (default) restrict twri for all holdings to dates where all exist;
-    ##                   this option may result in a crash for the portfolio
-    #                  = 'zero' changes twri from NA to zero for any holding where not defined 
-    ##        label    = 'symbol' uses holding symbols on risk/return and beta/alpha plots
-    ##                 = 'simple' collapses all holdings to "holding"
+    ##        weight    = vector of weights to use for rebalancing
+    ##        rebalance = 'period' (default) to rebalance every period to same weight
+    ##                  = 'years' to rebalance at end of each year
+    ##                  = 'no' to let assets grow without rebalancing
+    ##        value     = matrix of values for each holding for each period
+    ##        twri      = xts object with output from equity.twri, if provided, for holdings
+    #3                    xts object can contain more than what is in holding
+    ##        twrib     = 'SPY' (default) uses SPY ETF as benchmark
+    ##                  = some other stock symbol for use as benchmark
+    ##                  = xts object with output from equity.twri for benchmark
+    ##        from      = start date
+    ##        to        = end date
+    ##        period    = 'months' (default) for each increment in time (overruled if twri provided)
+    ##                  = 'days'
+    ##                  = 'years'
+    ##        na        = option to handle holdings with no twri
+    ##                  = 'omit' (default) restrict twri for all holdings to dates where all exist;
+    ##                    this option may result in a crash if too short a history for some holding
+    ##                  = 'zero' changes twri from NA to zero for any holding where not defined
+    ##        plottype  = 'twrc' for cumulative TWR
+    ##                  = 'rr' for risk/reward
+    ##                  = 'twri' for incremental TWR
+    ##                  = 'ab' for alpha/beta
+    ##        arrange   = TRUE (default) lets R figure out the best arrangement
+    ##                  = FALSE uses plot arrangement set up prior to function call
+    ##        label     = 'symbol' uses holding symbols on risk/return and beta/alpha plots
+    ##                  = 'simple' collapses all holdings to "holding"
+    ##        main      = title for plots
+
+    ## 
+    
     ## create plots of: risk/reward for portfolio, holdings, and benchmark
     ##                  performance history by year (bar chart?)
     ##                  alpha/beta for portfolio, holdings, and benchmark
@@ -160,9 +185,49 @@ portfolio.eval <- function(holding,
     }
     
     ## create portfolio twri
-    portfolio <- twri %*% as.matrix(weight)              # matrix
+    ##        weight    = vector of weights to use for rebalancing
+    ##        rebalance = 'period' (default) to rebalance every period to same weight
+    ##                  = 'years' to rebalance at end of each year
+    ##                  = 'no' to let assets grow without rebalancing
+    ##        value     = xts object with values for each holding for each period
+    if (class(value)[1] == 'xts') {
+        ## determine twri for portfolio from provided matrix of values
+        value       <- valuesheet[,names(value) %in% holding]   # values only for holdings
+        value0      <- value / (twri + 1)                       # values if back out holding twri
+        value.port  <- apply(value , 1, sum)                    # sum rows
+        value0.port <- apply(value0, 1, sum)                    # sum rows
+        twri.port   <- value.port / value0.port - 1
+        weight      <- as.numeric( value[nrow(value),] / sum(value[nrow(value),]) )
+    } else if (class(weight) == 'numeric') {
+        if (rebalance == 'no') {
+            ## let assets grow without rebalancing (i.e., determine new weight after every period)
+            ## need to determine weight as a function of time
+            weight0 <- weight
+            value0.port <- 1   # initialize value of portfolio at time t-1
+            twri.port   <- NA  # initialize vector for portfolio twri
+            for (i in 1:nrow(twri)) {
+                value.hold   <- (twri[1,] + 1) * weight * value0.port     # element-wise multiplication
+                value.port   <- sum(value.hold)
+                twri.port[i] <- value.port / value0.port
+                weight       <- value.hold / value.port
+                value0.port  <- value.port
+            }
+        } else if (rebalance == 'years') {
+            ## rebalance at the end of every calendar year (dlh future option)
+            cat('\nError: Option "rebalance = \'years\'" not programmed yet\n')
+            return()
+        } else {
+            ## rebalance = 'period' (default)
+            ## hold weight constant throughout the evaluation (i.e., rebalance every period)
+            twri.port <- twri %*% as.matrix(weight)  # %*% specifies matrix multiplication
+        }
+    } else {
+        cat('\nError: input "value" is not an xts object or input "weight" is not a numeric vector\n')
+        return()
+    }        
+    
     ## turn back into xts
-    portfolio <- xts::as.xts( zoo::as.zoo( portfolio, zoo::index(twri)))
+    portfolio <- xts::as.xts( zoo::as.zoo( as.matrix(twri.port), zoo::index(twri)))
     
     ## combine into single xts object and call the benchmark "benchmark"
     colnames(twrib) <- 'benchmark'
@@ -179,7 +244,7 @@ portfolio.eval <- function(holding,
     efdata      <- list()  # declares efdata as a list
     efdata$twri <- equity.twri(symbol, adjdates = adjdates)
     efdata$twri <- efdata$twri[xtsrange]
-        
+    
     ## establish other parameters in efdata using the defined efdata$twri
     efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)
     efdata.Schwab <- efdata
@@ -297,10 +362,10 @@ portfolio.eval <- function(holding,
 
         ## plot holdings
         with(perfhold, plotfit(std, twrcum, label, interval='noline',
-                             xlimspec=xlim, ylimspec=ylim,
-                             xlabel = 'Standard Deviation',
-                             ylabel = 'Cumulative TWR',
-                             main   = main))
+                               xlimspec=xlim, ylimspec=ylim,
+                               xlabel = 'Standard Deviation',
+                               ylabel = 'Cumulative TWR',
+                               main   = main))
         ## add portfolio
         points(perfport$std, perfport$twrcum, col='red', pch=16)
         ## add benchmark
@@ -313,7 +378,7 @@ portfolio.eval <- function(holding,
         mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
               side=3, line=0, cex=1)
 
-            
+        
         ## ## add holdings
         ## plot(perfhold$std, perfhold$twrcum,
         ##      xlab = 'Standard Deviation',
@@ -364,10 +429,10 @@ portfolio.eval <- function(holding,
                     max(xrange) + 0.25*(max(xrange) - min(xrange)))
         ylim   <- range(perf$alpha)
         with(perfhold, plotfit(beta, alpha, label, interval='noline',
-                             xlimspec=xlim, ylimspec=ylim,
-                             xlabel = 'beta',
-                             ylabel = 'alpha',
-                             main   = main))
+                               xlimspec=xlim, ylimspec=ylim,
+                               xlabel = 'beta',
+                               ylabel = 'alpha',
+                               main   = main))
         ## add portfolio
         points(perfport$beta, perfport$alpha, col='red', pch=16)
         ## add benchmark
