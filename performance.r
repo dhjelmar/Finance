@@ -6,13 +6,26 @@
 
 ##-----------------------------------------------------------------------------
 ## setup
-path <- getwd()
-source(paste( strsplit( getwd(), 'Finance' ), '/R-setup/setup.r', sep='' ) )
-r_files <- list.files(paste(path, '/modules/', sep=''), pattern="*.[rR]$", full.names=TRUE)
+os <- .Platform$OS.type
+if (os == 'windows') {
+    ## load generic modules
+    source("F:\\Documents\\01_Dave's Stuff\\Programs\\GitHub_home\\R-setup\\setup.r")
+    ## identify working folder
+    path <- c("f:/Documents/01_Dave's Stuff/Programs/GitHub_home/Finance/")
+} else {
+    ## os == unix
+    source('~/GitHub_repos/R-setup/setup.r')
+    path <- c('~/GitHub_repos/Finance/')
+}
+## set working folder
+setwd(path)
+## load local modules
+r_files <- list.files(paste(path, 'modules/', sep=''), pattern="*.[rR]$", full.names=TRUE)
 for (f in r_files) {
     ## cat("f =",f,"\n")
     source(f)
 }
+
 
 ##-----------------------------------------------------------------------------
 ## READ DATA and CONVERT TO XTS
@@ -25,24 +38,23 @@ twrsheet   <- out$twrsheet
 ## define portfolios created from combining accounts
 accounts <- names(twrsheet)
 print(accounts)
-church <- c('1111', '3-33-333')
 church <- accounts[1:5]
 de     <- accounts[grepl('^D |^E |^DE', accounts)]
 p      <- accounts[grepl('^P'         , accounts)]
 
 ##-----------------------------------------------------------------------------
 ## select a portfolio and timeframe for the evaluation
-portfolio     <-  church
-portfolioname <- 'Church'
-
 portfolio     <- de
 portfolioname <- 'DE'
 
 portfolio     <- verify
 portfolioname <- 'verify01'
 
+portfolio     <-  church
+portfolioname <- 'Church'
+
 period        <- 'months'
-xtsrange <- '2020-12/2021-12'
+xtsrange      <- '2020-12/2021-12'
 
 ##-----------------------------------------------------------------------------
 ## evaluate portfolio
