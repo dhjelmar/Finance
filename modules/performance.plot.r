@@ -2,9 +2,9 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
                              portfolioname = NULL, file = NULL) {
     
     
-    ## determine weight of each portion of portfolio
+    ## determine starting weight of each portion of portfolio
     value         <- valuesheet[,names(valuesheet) %in% portfolio]
-    current.value <- as.numeric( tail(value, 1) )
+    current.value <- as.numeric( head(value, 1) )
     weight        <- current.value / sum(current.value)
 
     if (!is.null(file)) pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
@@ -29,13 +29,13 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
     ## create cumulative and incremental TWR plots
     ## period = days used in the following so there is a unique value for every date read from Excel
     ## all date entries are consisered equally in evaluation of standard deviation, alpha, and beta
-    out1 <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
+    out1 <- portfolio.eval(portfolio, twri=twrsheet, twrib='SPY', value=valuesheet,
                            plottype = c('twrc', 'twri'), arrange=FALSE,
                            from=from, to=to, period=period,
                            main = main)
 
     ## create risk/return plot
-    out2 <- portfolio.eval(portfolio, weight=weight, twri=twrsheet, twrib='SPY',
+    out2 <- portfolio.eval(portfolio, twri=twrsheet, twrib='SPY', value=valuesheet,
                            plottype = c('rr', 'ab'),
                            from=from, to=to, period=period,
                            main = main)
