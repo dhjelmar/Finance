@@ -5,12 +5,12 @@ performance.read <- function() {
     ## READ DATA AS TIBBLE
     if (os == 'unix') {
         filename <- 'performance_data_example.xlsx'
-        map  <- readall(filename, sheet = 'Map',    header.row=3)
+        map        <- NA
         valuesheet <- readall(filename, sheet = 'value', header.row=6, rename=FALSE)
         twrsheet   <- readall(filename, sheet = 'TWR',   header.row=6, rename=FALSE)
     } else {
         filename <- 'performance_data.xlsx'
-        map  <- readall(filename, sheet = 'Map',    header.row=3)
+        map        <- readall(filename, sheet = 'Map',    header.row=3)
         valuesheet <- readall(filename, sheet = 'valueR', header.row=5, data.start.row=7, rename=FALSE)
         twrsheet   <- readall(filename, sheet = 'TWRR',   header.row=5, data.start.row=7, rename=FALSE)
         names(valuesheet) <- c('Date', names(valuesheet)[2:length(names(valuesheet))])
