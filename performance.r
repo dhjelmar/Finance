@@ -30,7 +30,6 @@ for (f in r_files) {
 ##-----------------------------------------------------------------------------
 ## READ DATA and CONVERT TO XTS
 out        <- performance.read()
-map        <- out$map
 valuesheet <- out$valuesheet
 twrsheet   <- out$twrsheet
 
@@ -46,9 +45,6 @@ p      <- accounts[grepl('^P'         , accounts)]
 ## select a portfolio and timeframe for the evaluation
 portfolio     <- de
 portfolioname <- 'DE'
-
-portfolio     <- verify
-portfolioname <- 'verify01'
 
 portfolio     <-  church
 portfolioname <- 'Church'
@@ -70,16 +66,6 @@ df$weight <- round(df$weight, 2)
 df$value  <- scales::dollar(df$value)
 ## print as data frame rather than tibble so right justifies
 print( as.data.frame(df) )
-
-dlh
-something is not correct:
-  given: xtsrange  <- '2020-12/2021-12'
-         period    <- 'months'
-         portfolio <- church
-  portfolio has correct twrcum for accounts but not portfolio
-         14.96% in consolidated report
-         14.97% in Octave
-         15.09% in R
 
          
 ## same as above but creates pdf file with plot output
