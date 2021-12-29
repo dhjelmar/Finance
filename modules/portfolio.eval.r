@@ -193,6 +193,14 @@ portfolio.eval <- function(holding,
     if (class(value)[1] == 'xts') {
         ## determine twri for portfolio from provided matrix of values
         value       <- valuesheet[,names(value) %in% holding]   # values only for holdings
+        ## value       <- value[xtsrange]                          # work only with values in range
+        if (!identical(zoo::index(value), zoo::index(twri))) {
+            ## problem with input value and twri not being consistent
+            cat('\n\n#######################################################\n')
+            cat(    '#    WARNING: INPUT VALUE AND TWRI NOT CONSISTENT      \n')
+            cat(    '#######################################################\n\n')
+            return()
+        }
         value0      <- value / (twri + 1)                       # values if back out holding twri
         value.port  <- apply(value , 1, sum)                    # sum rows
         value0.port <- apply(value0, 1, sum)                    # sum rows
