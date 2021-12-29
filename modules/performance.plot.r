@@ -2,10 +2,9 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
                              portfolioname = NULL, file = NULL) {
     
     
-    ## determine starting weight of each portion of portfolio
-    value         <- valuesheet[,names(valuesheet) %in% portfolio]
-    current.value <- as.numeric( head(value, 1) )
-    weight        <- current.value / sum(current.value)
+    ## extract value for portfolio holdings
+    value          <- valuesheet[,names(valuesheet[xtsrange]) %in% portfolio]
+    value.current  <- as.numeric( tail(value, 1) )
 
     if (!is.null(file)) pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
                             ## file = "performance%03d.pdf", onefile = FALSE,  # creates multiple PDF files
@@ -39,7 +38,15 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
                            plottype = c('rr', 'ab'),
                            from=from, to=to, period=period,
                            main = main)
-    out2$performance$value <- c(current.value, sum(current.value), NA)
+    ## above can be made more efficient to not look everything up again
+    ## following not working yet though
+    ## twri  <- out1$twri
+    ## twrib <- out1$twri$benchmark
+    ## out2 <- portfolio.eval(portfolio, twri=twri, twrib=twrib, value=valuesheet,
+    ##                        plottype = c('rr', 'ab'),
+    ##                        from=from, to=to, period=period,
+    ##                        main = main)
+    out2$performance$value <- c(value.current, sum(value.current), NA)
     
     ## evaluate portfolio as if it was a mutual fund
     twri <- twrsheet[,names(twrsheet) %in% portfolio]
