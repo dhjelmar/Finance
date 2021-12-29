@@ -6,16 +6,16 @@ performance.read <- function() {
     if (os == 'unix') {
         filename <- 'performance_data_example.xlsx'
         map        <- NA
-        valuesheet <- readall(filename, sheet = 'value', header.row=6, rename=FALSE)
-        twrsheet   <- readall(filename, sheet = 'TWR',   header.row=6, rename=FALSE)
+        valuesheet <- readall(filename, sheet = 'value', header.row=5, data.start.row=7, rename=FALSE)
+        twrsheet   <- readall(filename, sheet = 'TWR',   header.row=5, data.start.row=7, rename=FALSE)
     } else {
         filename <- 'performance_data.xlsx'
         map        <- readall(filename, sheet = 'Map',    header.row=3)
         valuesheet <- readall(filename, sheet = 'valueR', header.row=5, data.start.row=7, rename=FALSE)
         twrsheet   <- readall(filename, sheet = 'TWRR',   header.row=5, data.start.row=7, rename=FALSE)
-        names(valuesheet) <- c('Date', names(valuesheet)[2:length(names(valuesheet))])
-        names(twrsheet)   <- c('Date', names(twrsheet)[2:length(names(twrsheet))])
     }
+    names(valuesheet) <- c('Date', names(valuesheet)[2:length(names(valuesheet))])
+    names(twrsheet)   <- c('Date', names(twrsheet)[2:length(names(twrsheet))])
 
     ## CONVERT tibble TO XTS
     ## first change to dateframe so can set rownames as dates
