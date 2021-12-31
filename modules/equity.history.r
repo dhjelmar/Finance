@@ -25,6 +25,18 @@ equity.history <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', per
     ## copy XTS OHLCV format data for 1st symbol to variable asset
     asset <- get(symbol[1])
 
+    ## days the market is open
+    market.open.days <- as.Date( zoo::index(asset) )
+
+    ## last market day of each month
+    asset.months <- xts::to.period(asset, period='months')
+    market.open.months <- as.Date( zoo::index(asset.months) )
+
+    ## last market day of each year
+    asset.years  <- xts::to.period(asset, period='years')
+    market.open.years  <- as.Date( zoo::index(asset.years) )
+    
+
     if (period != 'days') {
         ## convert OHLCV format data to some other period
         asset <- xts::to.period(asset, period=period)
@@ -99,7 +111,10 @@ equity.history <- function(symbol, from=NULL, to=Sys.Date(), source='yahoo', per
     twrcum <- xts::as.xts( t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1) )
     std    <- apply(twri[2:nrow(twri),], 2, sd, na.rm=TRUE)
     
-    return(list(close = closeprice, adjprice = adjprice, twri=twri, twrcum=twrcum, std=std))
+    return(list(close = closeprice, adjprice = adjprice, twri=twri, twrcum=twrcum, std=std,
+                market.open.days   = market.open.days,
+                market.open.months = market.open.months,
+                market.open.years  = market.open.years))
 }
 
 ## out  <- equity.history(c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'), from='1995-01-01', period='years')
