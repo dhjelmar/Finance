@@ -15,9 +15,9 @@ twri.adjust <- function(xts, d2m=FALSE) {
     out <- equity.history('SPY', period='days')
 
     ## function to find the closest match
-    closest <- function(x, range=out$market.open.days) {
+    closest <- function(x, findin=out$market.open.days) {
         ## market.open[findInterval(as.Date('2021-01-31'), as.Date(market.open))]
-        market.open[findInterval(as.Date(x), as.Date(market.open))]
+        findin[findInterval(as.Date(x), as.Date(findin))]
     }
     ## closest('2021-01-31')
 
@@ -26,29 +26,60 @@ twri.adjust <- function(xts, d2m=FALSE) {
     zoo::index(xts) <- as.Date(adjust, origin='1970-01-01')
 
     ##-----------------------------------------------------------------------------
-    if(isTRUE(d2m)) {
+    if (isTRUE(d2m)) {
 
         ## WORK IN PROGRESS; SOME OF WHAT IS BELOW WILL NOT WORK
         
         ## xts object should contain twri values and option was selected to convert to months
+        twri <- xts
 
-        for (1 in 1:ncol(xts)) {
-            ## first convert twri to adjusted closing values
-            adjprice <- (twri + 1) * xts::lag.xts(twri, -1) - 1 # need to test this
-            
-            ## map to market.open.months then strip out NA values where there is no match
-            adjprice <- cbind(adjprice, market.open.months)  # likley need to change market.open.months to XTS first
-            adjprice <- na.omit(adjprice)
-            adjprice <- adjprice[1:ncol(xts)]
-            
-            ## convert back to twri
-            twri  <- adjprice / xts::lag.xts(adjprice, 1) - 1
-            ## remove 1st row since NA
-            twri <- twri[-1,]
+        ## number of columns in original xts object
+        twri.cols <- ncol(twri)
+        
+        ## create xts object from market open months for the range of the input xts object
+        twri.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
+        twri.open  <- xts.create(out$market.open.months, 1)[twri.range]
+
+        ## combine the two xts objects
+        twri <- cbind(twri, twri.open)
+
+        ## consider time t in xts object
+        twri.elim <- rep(0, twri.cols)
+        for (t in 1:nrow(twri)) {
+
+            if (is.na(twri[t, twri.cols+1])) {
+                ## need to eliminate this time and add twri to next twri for each column
+                twri.elim <- as.numeric(twri[t,])
+            }
+
+            for (c in 1:twri.cols) {
+                ## for each column, make no change if prior time was a month end
+                twri[t, c] <- (twri.elim[c] + 1) * (twri[t, c] + 1) - 1
+            }
+            ## reset twri.elim
+            twri.elim <- rep(0, twri.cols)
+
         }
+        twri <- na.omit(twri)
+        xts <- twri[, 1:twri.cols]
     }
     
     return(xts)
 
 }
-valuesheet <- twri.adjust(valuesheet)$
+## # a and a.adj should be identical
+##  a <- twrsheet[1:9, 1:3]
+##  a.adj <- twri.adjust(a, d2m=TRUE)
+
+# b has an extra, mid-month twri
+b <- twrsheet['2019-12-31/2020-04', 1:3]
+b.adj <- twri.adjust(b, d2m=TRUE)
+b.twrc     <- cumprod(b     + 1) - 1 
+b.adj.twrc <- cumprod(b.adj + 1) - 1
+identical(tail(b.twrc,1), tail(b.adj.twrc,1))    # should return TRUE but still returns FALSE
+
+
+## out <- equity.history('SPY', period='months')
+## adjclose <- out$adjprice['2019-12/2020']
+## twri <- equity.twri('SPY', period='months')['2019-12/2020']
+## twri.adjust(twri, d2m=TRUE)
