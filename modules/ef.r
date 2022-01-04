@@ -1,4 +1,4 @@
-ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
+ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period='months',
                addline=FALSE, col='black', lty=1, pch=3) {
     ## create Efficient Frontier points to assess TWR vs. risk
     
@@ -26,20 +26,24 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, period='months',
     if (is.na(efdata[1])) {
         ## efdata is not provided so need to get it
         symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-        out  <- equity.history(symbol, from=from, to=to, period=period)
-#        out  <- equity.history(symbol, period=period)
-        twri <- na.omit( out$twri )
+        if (is.null(adjdates)) {
+            out  <- equity.history(symbol, from=from, to=to, period=period)
+            twri <- na.omit( out$twri )
+        } else {
+            out <- equity.twri(symbol, adjdates=adjdates)
+            twri <- na.omit(out)
+        }
         twri_in <- NA
         
     } else {
         ## efdata is provided so can use it directly
         twri_in <- efdata$twri
         twri <- twri_in
-        if (is.na(from)) from <- zoo::index(twri)[1]
-        if (is.na(to))   to   <- zoo::index(twri)[nrow(twri)]
     }
     
     ## restrict to duration
+    if (is.na(from)) from <- zoo::index(twri)[1]
+    if (is.na(to))   to   <- zoo::index(twri)[nrow(twri)]
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
     xtsrange
     twri <- twri[xtsrange]
