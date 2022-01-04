@@ -53,7 +53,20 @@ period        <- 'months'
 xtsrange      <- '2020-12/2021-12'
 
 ##-----------------------------------------------------------------------------
-## evaluate portfolio
+## define benchmark
+from <- zoo::index(twrsheet[1,])
+to   <- zoo::index(xts::last(twrsheet))
+## efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE)
+efdata <- ef(model='Schwab', adjdates=c(as.Date('2016-11-30'), 
+                                        zoo::index(twrsheet)))
+twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
+check  <- identical(zoo::index(twrib), zoo::index(twrsheet))
+check  # need this to be true
+names(twrib) <- 'Schwab_70_30'
+
+
+##-----------------------------------------------------------------------------
+## evaluate portfolio against benchmark
 out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
                         portfolioname)
 perf <- as_tibble( out$out.xtsrange$performance )  # tibble conversion strips the rownames
@@ -69,6 +82,6 @@ print( as.data.frame(df) )
 
          
 ## same as above but creates pdf file with plot output
-out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange,
+out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
                         portfolioname, 
                         file = paste('performance.', portfolioname, '.pdf', sep=''))
