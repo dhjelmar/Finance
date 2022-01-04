@@ -1,4 +1,4 @@
-twri.adjust <- function(xts, d2m=FALSE) {
+twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
 
     ## ADJUST DATES FOR XTS OBJECT TO CLOSEST DATES THE MARKET IS OPEN
 
@@ -27,48 +27,54 @@ twri.adjust <- function(xts, d2m=FALSE) {
 
     ##-----------------------------------------------------------------------------
     if (isTRUE(d2m)) {
-
-        ## WORK IN PROGRESS; SOME OF WHAT IS BELOW WILL NOT WORK
-        
-        ## xts object should contain twri values and option was selected to convert to months
-        twri <- xts
+        ## convert to months
 
         ## number of columns in original xts object
-        twri.cols <- ncol(twri)
+        xts.cols <- ncol(xts)
         
         ## create xts object from market open months for the range of the input xts object
-        twri.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
-        twri.open  <- xts.create(out$market.open.months, 1)[twri.range]
+        xts.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
+        xts.open  <- xts.create(out$market.open.months, 1)[xts.range]
 
         ## combine the two xts objects
-        twri <- cbind(twri, twri.open)
+        xts <- cbind(xts, xts.open)
 
-        ## consider time t in xts object
-        twri.elim <- rep(0, twri.cols)
-        for (t in 1:nrow(twri)) {
+        if (isFALSE(twri.input)) {
+            ## input xts object is not twri so do elmininate dates not at month ends
+            ## but do not modify the values themselves
+            xts <- na.omit(xts)
+            
+        } else {
+            ## input xts object is twri so need to adjust month end values
+            ## if eliminate an intermediate twri
+            
+            ## consider time t in xts object
+            xts.elim <- rep(0, xts.cols)
+            for (t in 1:nrow(xts)) {
 
-            if (is.na(twri[t, twri.cols+1])) {
-                ## need to eliminate this time and add twri to next twri for each column
-                for (h in 1:twri.cols) {
-                    twri.elim[h] <- (twri.elim[h] + 1) * (twri[t, h] + 1) - 1
+                if (is.na(xts[t, xts.cols+1])) {
+                    ## need to eliminate this time and add twri to next twri for each column
+                    for (h in 1:xts.cols) {
+                        xts.elim[h] <- (xts.elim[h] + 1) * (xts[t, h] + 1) - 1
+                    }
+                    xts.elim <- as.numeric(xts.elim)
+                    ## cat(t, xts[t,], xts.elim,'\n')
+
+                } else {
+                    ## calculate a new xts if needed for each holding h
+                    for (h in 1:xts.cols) {
+                        ## No change if prior time was not NA (i.e., xts.elim=0)
+                        xts[t, h] <- (xts.elim[h] + 1) * (xts[t, h] + 1) - 1
+                    }
+                    ## reset xts.elim
+                    xts.elim <- rep(0, xts.cols)
+                    ## cat(t, xts[t,], xts.elim,'\n')
                 }
-                twri.elim <- as.numeric(twri.elim)
-                cat(t, twri[t,], twri.elim,'\n')
-
-            } else {
-                ## calculate a new twri if needed for each holding h
-                for (h in 1:twri.cols) {
-                    ## No change if prior time was not NA (i.e., twri.elim=0)
-                    twri[t, h] <- (twri.elim[h] + 1) * (twri[t, h] + 1) - 1
-                }
-                ## reset twri.elim
-                twri.elim <- rep(0, twri.cols)
-                cat(t, twri[t,], twri.elim,'\n')
             }
+            xts <- na.omit(xts)
+            xts <- xts[, 1:xts.cols]
         }
-        twri <- na.omit(twri)
-        xts <- twri[, 1:twri.cols]
-        ## xts <- twri
+        
     }
     
     return(xts)
