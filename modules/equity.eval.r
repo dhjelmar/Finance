@@ -61,7 +61,7 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     for (durationi in duration) {
         i <- i + 1
       
-        ## extract vectors for alapha and beta
+        ## extract vectors for alpha and beta
         bothx <- xts::last(both, durationi)
         twrix       <- as.numeric( bothx[, 1] )
         twribx  <- as.numeric( bothx[, 2] )
