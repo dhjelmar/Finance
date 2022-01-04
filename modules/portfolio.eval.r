@@ -6,7 +6,8 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
     holding <- c('SWPPX', 'AGG') 
     from <- '2016-12-30'   # 2016-12-31 is a Saturday
     to   <- '2021-11-30'
-    
+    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+
     ##-----------------------------------------------------------------------------
     ## verification 1
     ## test case where look up holding and baseline twri from Yahoo
@@ -59,34 +60,30 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
 
     ##-----------------------------------------------------------------------------
     ## verification 4
-    ## supply twri with non-regular period
-
-    ## first create an xts object as if it was read in with a twri for each date to be used in twrc
-    ## i.e., missing the 1st row
-    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
-    twri  <- equity.twri(holding)[xtsrange]
-    twri  <- twri[-1]
-    ## if planning to supply twri, need to add an extra row for the "from" date
-    twri.from <- head(twri, 1)
-    zoo::index(twri.from) <- as.Date(from)
-    twri <- rbind(twri.from, twri)
-    twri[1,] <- 0  # zero out the row
-    ## 
-    vdate <- zoo::index(twri)
-    vdate <- c(as.Date(vdate[1:38],
-                       as.Date('2020-03-20'), vdate[39:length(vdate)]))
-    twri  <- equity.twri(holding, adjdates = vdate)
-    out4 <- portfolio.eval(holding,
-                           weight = rep(1/length(holding), length(holding)),
-                           twri  = twri,
-                           twrib = twrib,
-                           from = from,
-                           to   = to,
-                           plottype = c('twrc', 'rr', 'twri', 'ab'),
-                           ## plottype = c('twrc', 'rr', 'twri', 'ab'),
-                           label = 'symbol',
-                           main  = 'verification 4')
-
+    ## use Schwab 70/30 model as benchmark
+    twri   <- equity.twri(holding)[xtsrange]
+    from   <- zoo::index(twri[1,])
+    to     <- zoo::index(twri[nrow(twri),])
+    efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE)
+    twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
+    names(twrib) <- 'Schwab_70_30'
+    ## twrib  <- efdata$eftwri$schwab_80_20
+    out4   <- portfolio.eval(holding,
+                             weight = rep(1/length(holding), length(holding)),
+                             twri  = twri,
+                             twrib = twrib,
+                             efdata = efdata,
+                             from = from,
+                             to   = to,
+                             plottype = c('twrc', 'rr', 'twri', 'ab'),
+                             ## plottype = c('rr'),
+                             ## plottype = c('twrc', 'rr', 'twri', 'ab'),
+                             label = 'symbol',
+                             main  = 'verification 4; benchmark = Schwab 70/30')
+    ## lines(efdata$ef$efstd, efdata$ef$eftwrcum, type='b', col='red', lty=3, pch=1)
+    ## twrib.std  <- sd(twrib[2:nrow(twrib)])
+    ## twrib.twrc <- twrc.calc(twrib, zero.from=TRUE)
+    ## points(twrib.std, xts::last(twrib.twrc))
 }
 
 portfolio.eval <- function(holding,
@@ -95,6 +92,7 @@ portfolio.eval <- function(holding,
                            value     = NA, 
                            twri      = NULL,
                            twrib     = 'SPY',
+                           efdata    = NULL,
                            from,
                            to  ,
                            period='months',
@@ -142,21 +140,33 @@ portfolio.eval <- function(holding,
     ##                  p/e ratio vs reward?
     
     ## get equity history
+    twri.cpi <- NULL
     if (is.null(twri)) {
         twri_provided <- FALSE
         twri  <- equity.twri(holding, period=period)
     } else {
         ## twri provided but may need to strip out the holding columns
         twri_provided <- TRUE
+        twri_orig <- twri
         twri <- twri[, (colnames(twri) %in% tidyselect::all_of(holding))]
         if (length(names(twri)) != length(holding)) {
             ## all requested holdings were not in input twri so grab them
             twri  <- equity.twri(holding, period=period)
         }
     }
+    
     if (class(twrib)[1] != 'xts') {
         ## symbol provided rather than XTS object
         twrib <- equity.twri(twrib  , period=period)        
+    } else {
+        ## xts object provided for twrib
+        twrib_provided <- TRUE
+        if (!identical(zoo::index(twri), zoo::index(twrib))) {
+            cat('\n############################################################\n')
+            cat('  # Error: Provided twri and twrib do not have the same dates\n')
+            cat('  ############################################################\n')
+            return()
+        }
     }
 
     ## The following would be incorrect for intermediate missing dates
@@ -192,9 +202,9 @@ portfolio.eval <- function(holding,
     ##        value     = xts object with values for each holding for each period
     if (class(value)[1] == 'xts') {
         ## determine twri for portfolio from provided matrix of values
-        value       <- valuesheet[,names(value) %in% holding]   # values only for holdings
+        value       <- value[,names(value) %in% holding]   # values only for holdings
         ## value       <- value[xtsrange]                          # work only with values in range
-        if (!identical(zoo::index(value), zoo::index(twri))) {
+       if (!identical(zoo::index(value), zoo::index(twri))) {
             ## problem with input value and twri not being consistent
             cat('\n\n#######################################################\n')
             cat(    '#    WARNING: INPUT VALUE AND TWRI NOT CONSISTENT      \n')
@@ -242,17 +252,17 @@ portfolio.eval <- function(holding,
     twriall <- cbind(twri, portfolio, twrib)
     
     ## restrict to duration
-    ## xtsrange <- paste('"', noquote(duration[1]), '/', noquote(duration[2]), '"', sep='')
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
-    xtsrange
     twriall <- twriall[xtsrange]
 
-    ## generate efficient frontier module data for same dates as twriall
-    symbol      <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-    efdata      <- list()  # declares efdata as a list
-    efdata$twri <- equity.twri(symbol, adjdates = adjdates)
-    efdata$twri <- efdata$twri[xtsrange]
-    
+    if (is.null(efdata)) {
+        ## generate efficient frontier module data for same dates as twriall
+        symbol      <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
+        efdata      <- list()  # declares efdata as a list
+        efdata$twri <- equity.twri(symbol, adjdates = adjdates)
+        efdata$twri <- efdata$twri[xtsrange]
+    }
+        
     ## establish other parameters in efdata using the defined efdata$twri
     efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)
     efdata.Schwab <- efdata
@@ -266,7 +276,7 @@ portfolio.eval <- function(holding,
     twrcum  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
     twrcuml <- t( xts::last(twrcum) )
     std     <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
-
+    
     if (isTRUE(arrange)) {
         ## reserve plotspace if plottype > 1
         if (length(plottype) == 2) {
@@ -277,19 +287,45 @@ portfolio.eval <- function(holding,
             plotspace(2,2)
         }
     }
+
+    
+    ##-----------------------------------------------------------------------------
+    if (which(grepl('CPI', names(twri_orig))) > 0) {
+        ## twri for CPI (consumer price index) provided for plotting
+        twri.cpi <- twri_orig$CPI[xtsrange]
+        twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
+        if (period == 'days') {
+            divisor <- 52*5
+        } else if (period == 'weeks') {
+            divisor <- 52
+        } else if (period == 'months') {
+            divisor <- 12
+        } else if (period == 'years') {
+            divisor <- 1
+        }
+        twri.cpip5 <- twri.cpi + 0.05 / divisor
+        twrc.cpip5 <- twrc.calc(twri.cpip5, zero.from=TRUE)
+    }
+
     
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
     if (sum(grepl('twrc', plottype) >= 1)) {
         ## plot( plotxts(twrcum, main=main) )
         xts <- twrcum
-        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Cumulative TWR', main=main)
+        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Cumulative TWR', main=main,
+                            ylim=range(xts))
         pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
         pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
+        legend.names <- names(xts)
+        if (which(grepl('CPI', names(twri_orig))) > 0) {
+            pp <- xts::addSeries(twrc.cpip5, on=1, col='cyan', lwd=2, lty=3)
+            legend.names <- c(names(xts), 'CPI+5%')
+        }
         pp <- xts::addLegend("topleft",
-                             legend.names = names(xts), 
-                             lty=c(rep(1, ncol(xts)-2), 2, 2),
-                             col=c(    1:(ncol(xts)-2), 'red', 'black'))
+                             legend.names = legend.names, 
+                             lty=c(rep(1, ncol(xts)-2), 2, 2, 3),
+                             col=c(    1:(ncol(xts)-2), 'red', 'black', 'cyan'))
         plot(pp)
     }
     
@@ -417,13 +453,23 @@ portfolio.eval <- function(holding,
     if (sum(grepl('twri', plottype) >= 1)) {
         ## plot( plotxts(twriall, main=main) )
         xts <- twriall
-        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Incremental TWR', main=main)
+        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Incremental TWR', main=main,
+                            ylim=range(xts))
         pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
         pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
+        legend.names <- names(xts)
+        if (which(grepl('CPI', names(twri_orig))) > 0) {
+            pp <- xts::addSeries(twri.cpip5, on=1, col='cyan', lwd=2, lty=3)
+            legend.names <- c(names(xts), 'CPI+5%')
+        }
         pp <- xts::addLegend("topleft",
-                             legend.names = names(xts), 
-                             lty=c(rep(1, ncol(xts)-2), 2, 2),
-                             col=c(    1:(ncol(xts)-2), 'red', 'black'))
+                             legend.names = legend.names, 
+                             lty=c(rep(1, ncol(xts)-2), 2, 2, 3),
+                             col=c(    1:(ncol(xts)-2), 'red', 'black', 'cyan'))
+        ## pp <- xts::addLegend("topleft",
+        ##                      legend.names = names(xts), 
+        ##                      lty=c(rep(1, ncol(xts)-2), 2, 2),
+        ##                      col=c(    1:(ncol(xts)-2), 'red', 'black'))
         plot(pp)
     }
     
