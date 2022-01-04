@@ -24,20 +24,36 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
     if (is.null(portfolioname)) portfolioname <- 'Portfolio'
     main <- paste(portfolioname, ': ', duration, '; period = ', period, sep='')
     cat('\n', main, '\n\n')
-
+    
     ## create cumulative and incremental TWR plots
     ## period = days used in the following so there is a unique value for every date read from Excel
     ## all date entries are consisered equally in evaluation of standard deviation, alpha, and beta
-    out1 <- portfolio.eval(portfolio, twri=twrsheet, twrib='SPY', value=valuesheet,
+    out1 <- portfolio.eval(portfolio, twri=twrsheet, twrib=twrib, value=valuesheet,
                            plottype = c('twrc', 'twri'), arrange=FALSE,
                            from=from, to=to, period=period,
-                           main = main)
+                           main = paste(main, '; bench=', names(twrib), sep=''))
+
+    
+    ## standard deviation, alpha, and beta are generally calculated using month end returns
+    ## the following converts incremental TWR and values for use in those calculations
+    ## to do this if standard = TRUE
+    standard.conversion = TRUE
+    if (isFALSE(standard.conversion)) {
+        ## use incremental TWR and values as read in
+        twrsheet.use   <- twrsheet
+        valuesheet.use <- valuesheet
+    } else {
+        ## convert twrsheet and valuesheet to only be at month ends
+        ## (and force to market days if not already done)
+        twrsheet.use   <- twri.adjust(twrsheet  , d2m=TRUE)
+        valuesheet.use <- twri.adjust(valuesheet, d2m=TRUE, twri.input=FALSE)
+    }   
 
     ## create risk/return plot
-    out2 <- portfolio.eval(portfolio, twri=twrsheet, twrib='SPY', value=valuesheet,
+    out2 <- portfolio.eval(portfolio, twri=twrsheet.use, twrib='SPY', value=valuesheet.use,
                            plottype = c('rr', 'ab'),
                            from=from, to=to, period=period,
-                           main = main)
+                           main = paste(main, '; bench=SPY', sep=''))
     ## above can be made more efficient to not look everything up again
     ## following not working yet though
     ## twri  <- out1$twri
