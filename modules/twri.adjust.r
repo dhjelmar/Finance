@@ -42,7 +42,7 @@ twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
         if (isFALSE(twri.input)) {
             ## input xts object is not twri so do elmininate dates not at month ends
             ## but do not modify the values themselves
-            xts <- na.omit(xts)
+            xts <- xts[xts$xts.created == 1, 1:xts.cols]
             
         } else {
             ## input xts object is twri so need to adjust month end values
@@ -71,8 +71,7 @@ twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
                     ## cat(t, xts[t,], xts.elim,'\n')
                 }
             }
-            xts <- na.omit(xts)
-            xts <- xts[, 1:xts.cols]
+            xts <- xts[xts$xts.created == 1, 1:xts.cols]
         }
         
     }
