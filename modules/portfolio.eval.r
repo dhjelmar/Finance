@@ -139,7 +139,7 @@ portfolio.eval <- function(holding,
     ##                  alpha/beta for portfolio, holdings, and benchmark
     ##                  p/e ratio vs reward?
     
-    if (twrib == 'SPY') browser()
+    if (twrib[1] == 'SPY') browser()
     
     ## get equity history
     if (is.null(twri)) {
@@ -378,12 +378,12 @@ portfolio.eval <- function(holding,
     ##-----------------------------------------------------------------------------
     ## risk/reward plot
 
+    ## separate into 3 dataframes
+    perfhold  <- perf[1:twri.col,]
+    perfport  <- perf[perf$Holding == 'portfolio',]
+    perfbench <- perf[twrib.col.start,]   # first benchmark only
+    
     if (sum(grepl('rr', plottype) >= 1)) {
-        
-        ## separate into 3 dataframes
-        perfhold  <- perf[perf$Holding != 'portfolio' & perf$Holding != 'benchmark',]
-        perfport  <- perf[perf$Holding == 'portfolio',]
-        perfbench <- perf[perf$Holding == 'benchmark',]
         
         ## determine reange making room for legend
         xrange <- range(perf$std, efdata$ef$efstd)
