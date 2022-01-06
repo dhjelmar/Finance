@@ -139,6 +139,8 @@ portfolio.eval <- function(holding,
     ##                  alpha/beta for portfolio, holdings, and benchmark
     ##                  p/e ratio vs reward?
     
+    if (twrib == 'SPY') browser()
+    
     ## get equity history
     if (is.null(twri)) {
         twri_provided <- FALSE
@@ -301,7 +303,7 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twrcum, main=main) )
         xts <- twrcum
         pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Cumulative TWR', main=main,
-                            ylim=range(xts))
+                            ylim=range(xts, na.rm=TRUE))
         pp <- xts::addSeries(xts$portfolio,
                              on=1, col='red'    , lwd=2, lty=2)
         pp <- xts::addSeries(xts[, twrib.col.start:twrib.col.end],
@@ -439,7 +441,7 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twriall, main=main) )
         xts <- twriall
         pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Incremental TWR', main=main,
-                            ylim=range(xts))
+                            ylim=range(xts, na.rm = TRUE))
         pp <- xts::addSeries(xts$portfolio,
                              on=1, col='red'    , lwd=2, lty=2)
         pp <- xts::addSeries(xts[, twrib.col.start:twrib.col.end],
