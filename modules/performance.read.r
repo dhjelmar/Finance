@@ -9,7 +9,8 @@ performance.read <- function() {
         valuesheet <- readall(filename, sheet = 'value', header.row=5, data.start.row=7, rename=FALSE)
         twrsheet   <- readall(filename, sheet = 'TWR',   header.row=5, data.start.row=7, rename=FALSE)
     } else {
-        filename <- 'performance_data.xlsx'
+        source('modules/path.fdata.r')
+        filename <- paste(path.fdata, 'performance_data.xlsx', sep='')
         map        <- readall(filename, sheet = 'Map',    header.row=3)
         valuesheet <- readall(filename, sheet = 'valueR', header.row=5, data.start.row=7, rename=FALSE)
         twrsheet   <- readall(filename, sheet = 'TWRR',   header.row=5, data.start.row=7, rename=FALSE)
