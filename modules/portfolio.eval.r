@@ -140,7 +140,6 @@ portfolio.eval <- function(holding,
     ##                  p/e ratio vs reward?
     
     ## get equity history
-    twri.cpi <- NULL
     if (is.null(twri)) {
         twri_provided <- FALSE
         twri  <- equity.twri(holding, period=period)
@@ -190,7 +189,8 @@ portfolio.eval <- function(holding,
     ## use date from next earlier twri as the adjusted date for equity.twri
     adjdates    <- c(first, twri.dates)
     if (!identical(twri.dates, twrib.dates)) {
-        ## redo twrib to match the twri index
+        ## attempt to redo twrib to match the twri index
+        ## note this will fail if twri symbol is not a real symbol
         twrib <- equity.twri(names(twrib), adjdates = adjdates)
     }
     
@@ -246,10 +246,16 @@ portfolio.eval <- function(holding,
     
     ## turn back into xts
     portfolio <- xts::as.xts( zoo::as.zoo( as.matrix(twri.port), zoo::index(twri)))
+    colnames(portfolio) <- 'portfolio'
     
     ## combine into single xts object and call the benchmark "benchmark"
-    colnames(twrib) <- 'benchmark'
+    ## colnames(twrib) <- 'benchmark'
     twriall <- cbind(twri, portfolio, twrib)
+    colnames(twriall) <- c(colnames(twri), colnames(portfolio), colnames(twrib))
+    twri.col        <- ncol(twri)
+    twrib.col       <- ncol(twrib)
+    twrib.col.start <- twri.col + 1 + 1
+    twrib.col.end   <- twri.col + 1 + twrib.col
     
     ## restrict to duration
     xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
@@ -290,42 +296,21 @@ portfolio.eval <- function(holding,
 
     
     ##-----------------------------------------------------------------------------
-    if (which(grepl('CPI', names(twri_orig))) > 0) {
-        ## twri for CPI (consumer price index) provided for plotting
-        twri.cpi <- twri_orig$CPI[xtsrange]
-        twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
-        if (period == 'days') {
-            divisor <- 52*5
-        } else if (period == 'weeks') {
-            divisor <- 52
-        } else if (period == 'months') {
-            divisor <- 12
-        } else if (period == 'years') {
-            divisor <- 1
-        }
-        twri.cpip5 <- twri.cpi + 0.05 / divisor
-        twrc.cpip5 <- twrc.calc(twri.cpip5, zero.from=TRUE)
-    }
-
-    
-    ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
     if (sum(grepl('twrc', plottype) >= 1)) {
         ## plot( plotxts(twrcum, main=main) )
         xts <- twrcum
-        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Cumulative TWR', main=main,
+        pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Cumulative TWR', main=main,
                             ylim=range(xts))
-        pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
-        pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$portfolio,
+                             on=1, col='red'    , lwd=2, lty=2)
+        pp <- xts::addSeries(xts[, twrib.col.start:twrib.col.end],
+                             on=1, col=c('black', 'cyan')  , lwd=2, lty=2)
         legend.names <- names(xts)
-        if (which(grepl('CPI', names(twri_orig))) > 0) {
-            pp <- xts::addSeries(twrc.cpip5, on=1, col='cyan', lwd=2, lty=3)
-            legend.names <- c(names(xts), 'CPI+5%')
-        }
         pp <- xts::addLegend("topleft",
                              legend.names = legend.names, 
-                             lty=c(rep(1, ncol(xts)-2), 2, 2, 3),
-                             col=c(    1:(ncol(xts)-2), 'red', 'black', 'cyan'))
+                             lty=c(rep(1, twri.col), 2, 2, 3),
+                             col=c(    1:(1 + twrib.col), 'red', 'black', 'cyan'))
         plot(pp)
     }
     
@@ -453,25 +438,20 @@ portfolio.eval <- function(holding,
     if (sum(grepl('twri', plottype) >= 1)) {
         ## plot( plotxts(twriall, main=main) )
         xts <- twriall
-        pp <- xts::plot.xts(xts[,1:(ncol(xts)-2)], ylab='Incremental TWR', main=main,
+        pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Incremental TWR', main=main,
                             ylim=range(xts))
-        pp <- xts::addSeries(xts$portfolio, on=1, col='red'    , lwd=2, lty=2)
-        pp <- xts::addSeries(xts$benchmark, on=1, col='black'  , lwd=2, lty=2)
+        pp <- xts::addSeries(xts$portfolio,
+                             on=1, col='red'    , lwd=2, lty=2)
+        pp <- xts::addSeries(xts[, twrib.col.start:twrib.col.end],
+                             on=1, col=c('black', 'cyan')  , lwd=2, lty=2)
         legend.names <- names(xts)
-        if (which(grepl('CPI', names(twri_orig))) > 0) {
-            pp <- xts::addSeries(twri.cpip5, on=1, col='cyan', lwd=2, lty=3)
-            legend.names <- c(names(xts), 'CPI+5%')
-        }
         pp <- xts::addLegend("topleft",
                              legend.names = legend.names, 
-                             lty=c(rep(1, ncol(xts)-2), 2, 2, 3),
-                             col=c(    1:(ncol(xts)-2), 'red', 'black', 'cyan'))
-        ## pp <- xts::addLegend("topleft",
-        ##                      legend.names = names(xts), 
-        ##                      lty=c(rep(1, ncol(xts)-2), 2, 2),
-        ##                      col=c(    1:(ncol(xts)-2), 'red', 'black'))
+                             lty=c(rep(1, twri.col), 2, 2, 3),
+                             col=c(    1:(1 + twrib.col), 'red', 'black', 'cyan'))
         plot(pp)
     }
+
     
     ##-----------------------------------------------------------------------------
     ## alpha/beta plot
@@ -507,7 +487,7 @@ portfolio.eval <- function(holding,
     ##-----------------------------------------------------------------------------
     
     ## add weights to perf and drop label parameter
-    perf$weight <- c(weight, NA, NA)
+    perf$weight <- c(weight, rep(NA, 1+twrib.col))
     perf$label  <- NULL
 
     ## any correlation?
