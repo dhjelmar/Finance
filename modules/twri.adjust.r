@@ -37,7 +37,10 @@ twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
         xts.open  <- xts.create(out$market.open.months, 1)[xts.range]
 
         ## combine the two xts objects
+        xts.names      <- names(xts)
+        xts.open.names <- names(xts.open)
         xts <- cbind(xts, xts.open)
+        names(xts) <- c(xts.names, xts.open.names)
 
         if (isFALSE(twri.input)) {
             ## input xts object is not twri so do elmininate dates not at month ends
