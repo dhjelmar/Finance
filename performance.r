@@ -53,7 +53,7 @@ period        <- 'months'
 xtsrange      <- '2020-12/2021-12'
 
 ##-----------------------------------------------------------------------------
-## define benchmark
+## define benchmarks
 from <- zoo::index(twrsheet[1,])
 to   <- zoo::index(xts::last(twrsheet))
 ## efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE)
@@ -63,6 +63,25 @@ twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
 check  <- identical(zoo::index(twrib), zoo::index(twrsheet))
 check  # need this to be true
 names(twrib) <- 'Schwab_70_30'
+
+## add CPI+5% to benchmark if exists inside twrsheet
+if (which(grepl('CPI', names(twrsheet))) > 0) {
+    ## twri for CPI (consumer price index) provided for plotting
+    twri.cpi <- twrsheet$CPI
+    twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
+    if (period == 'days') {
+        divisor <- 52*5
+    } else if (period == 'weeks') {
+        divisor <- 52
+    } else if (period == 'months') {
+        divisor <- 12
+    } else if (period == 'years') {
+        divisor <- 1
+    }
+    ## twri.cpip5 <- twri.cpi + 0.05 / divisor
+    ## twrc.cpip5 <- twrc.calc(twri.cpip5, zero.from=TRUE)
+    twrib$'CPI+5%' <- twri.cpi + 0.05 / divisor
+}
 
 
 ##-----------------------------------------------------------------------------
