@@ -16,28 +16,37 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     ##                   = number instead returns the last this number of time steps
     ##                     Use this option with from/to to set a specific date range, e.g.:
     ##                         from='2020-10-28', to='2020-12-31', period='days', duration=99999 
-    
+
+
+    ## test that there is only one symbol or twri column
+    ##                and only one bench or twrib column
+    if ( (class(symbol) == 'character' & length(symbol) > 1) |
+         (length(names(twri))  > 1) |
+         (length(names(twrib)) > 1)
+        ) {
+        cat('/nError: Multiple symbols passed into equity.eval/n')
+        cat(  '       through "symbol", "bench", "twri", or "twrib./n')
+        return()
+    }
+        
     ## get history
     if (is.null(twri)) {
         ## twri not passed in so obtain
         out  <- equity.history(symbol, period=period, from=from, to=to)
         twri <- out$twri
-    }
+    }  
     if (is.null(twrib)) {
         ## twrib not passed in so obtain (no need to worry about dates since will line up later)
         twrib <- equity.history(bench, period=period)$twri
-    } else {
-        ## twrib is passed in
-        twrib <- twrib
     }
 
-    if (!is.null(from) | !is.null(to)) {
-        ## from and/or to are not defined so do not use to restrict date range
-        xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
-        xtsrange
-        twri <- twri[xtsrange]
-    }
-        
+    ## if from and/or to not defined, extract xtsrange from twri
+    if (is.null(from)) from <- zoo::index(twri[1,])
+    if (is.null(to))   to   <- zoo::index(twri[nrow(twri),])
+    xtsrange <- paste(from, '/', to, sep='')
+    twri  <- twri[xtsrange]
+    twrib <- twrib[xtsrange]
+
     ## combine twri and benchmarks to line up dates and remove NA
     ## first make sure the same dates will be considered identical
     zoo::index(twri)  <- as.Date( zoo::index(twri) )  # align/fix xts dates before cbind merge
