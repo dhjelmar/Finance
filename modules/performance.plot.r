@@ -65,9 +65,9 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
     out2$performance$value <- c(value.current, sum(value.current), NA)
     
     ## evaluate portfolio as if it was a mutual fund
-    twri <- twrsheet[,names(twrsheet) %in% portfolio]
+    twri <- out2$twri$portfolio
     ## out <- equity.eval(portfolioname, 'SPY', twri=out$twri$portfolio, period=period)
-    out3 <- equity.eval(portfolioname, 'SPY', twri=twri, period=period)
+    out3 <- equity.eval(portfolioname, 'SPY', twri=twri[2:nrow(twri),], period=period)
 
 
     if (!is.null(file)) dev.off() # close external pdf (or jpg) file
