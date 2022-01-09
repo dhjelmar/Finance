@@ -80,7 +80,7 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
                              ## plottype = c('twrc', 'rr', 'twri', 'ab'),
                              label = 'symbol',
                              main  = 'verification 4; benchmark = Schwab 70/30')
-    ## lines(efdata$ef$efstd, efdata$ef$eftwrcum, type='b', col='red', lty=3, pch=1)
+    ## lines(efdata$ef$efstd, efdata$ef$eftwrc, type='b', col='red', lty=3, pch=1)
     ## twrib.std  <- sd(twrib[2:nrow(twrib)])
     ## twrib.twrc <- twrc.calc(twrib, zero.from=TRUE)
     ## points(twrib.std, xts::last(twrib.twrc))
@@ -123,7 +123,8 @@ portfolio.eval <- function(holding,
     ##                    this option may result in a crash if too short a history for some holding
     ##                  = 'zero' changes twri from NA to zero for any holding where not defined
     ##        plottype  = 'twrc' for cumulative TWR
-    ##                  = 'rr' for risk/reward
+    ##                  = 'rr' for risk/reward (terc vs. sd)
+    ##                    or 'rra' for annualized risk/rewrad (ann. twrc vs. sd * sqrt(12)) 
     ##                  = 'twri' for incremental TWR
     ##                  = 'ab' for alpha/beta
     ##        arrange   = TRUE (default) lets R figure out the best arrangement
@@ -139,7 +140,7 @@ portfolio.eval <- function(holding,
     ##                  alpha/beta for portfolio, holdings, and benchmark
     ##                  p/e ratio vs reward?
     
-    if (twrib[1] == 'SPY') browser()
+    ## if (twrib == 'SPY') browser()
     
     ## get equity history
     if (is.null(twri)) {
@@ -280,10 +281,24 @@ portfolio.eval <- function(holding,
     holdings <- names(twriall)
 
     ## cumulative twr and standard deviation
-    ## 1st date should have twrcum = 0
-    twrcum  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
-    twrcuml <- t( xts::last(twrcum) )
-    std     <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
+    ## 1st date should have twrc = 0
+    twrc  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
+    twrcl <- t( xts::last(twrc) )
+    std   <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
+
+    ## calculate risk from standard deviation
+    ##    std(xi) = sqrt ( sum(xi-xbar)^2 / N ) for population which seems to be what finance world uses
+    ## If have x = monthly TWR and want std for y = yearly TWR
+    ## then set F * std(x) = std(y) and solve for F.
+    ## If assume yi = 12*xi and give credit for the fact that 1 yearly entry is from 12 measurments, 
+    ## then can use Ny = 12*Nm and F = sqrt(12).
+    ## std( TWR_monthly - avg_TWR_monthly )
+    std.ann  <- std * 12^0.5  
+
+    ## average annual return
+    days.held <- as.numeric(as.Date(to) - as.Date(from))
+    twrc.ann  <- (1 + twrcl)^(365.25 / days.held) - 1
+
     
     if (isTRUE(arrange)) {
         ## reserve plotspace if plottype > 1
@@ -300,8 +315,8 @@ portfolio.eval <- function(holding,
     ##-----------------------------------------------------------------------------
     ## plot cumulative TWR
     if (sum(grepl('twrc', plottype) >= 1)) {
-        ## plot( plotxts(twrcum, main=main) )
-        xts <- twrcum
+        ## plot( plotxts(twrc, main=main) )
+        xts <- twrc
         pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Cumulative TWR', main=main,
                             ylim=range(xts, na.rm=TRUE))
         pp <- xts::addSeries(xts$portfolio,
@@ -329,8 +344,8 @@ portfolio.eval <- function(holding,
         out[out$Holding == 'portfolio',]$label <- 'portfolio'
         out[out$Holding == 'benchmark',]$label <- 'benchmark'
     }
-    perf  <- cbind(out, twrcuml, std)
-    names(perf) <- c('Holding', 'label', 'twrcum', 'std')
+    perf  <- cbind(out, twrcl, std, twrc.ann, std.ann)
+    names(perf) <- c('Holding', 'label', 'twrc', 'std', 'twrc.ann', 'std.ann')
 
 
     ##-----------------------------------------------------------------------------
@@ -383,55 +398,60 @@ portfolio.eval <- function(holding,
     perfport  <- perf[perf$Holding == 'portfolio',]
     perfbench <- perf[twrib.col.start,]   # first benchmark only
     
-    if (sum(grepl('rr', plottype) >= 1)) {
+    if (sum(grepl('rr$', plottype) >= 1)) {
         
-        ## determine reange making room for legend
+        ## determine range making room for legend
         xrange <- range(perf$std, efdata$ef$efstd)
         xlim   <- c(min(xrange),
                     max(xrange) + 0.25*(max(xrange) - min(xrange)))
-        ylim   <- range(perf$twrcum, efdata$ef$eftwrcum)
+        ylim   <- range(perf$twrc, efdata$ef$eftwrc)
 
         ## plot holdings
-        with(perfhold, plotfit(std, twrcum, label, interval='noline',
+        with(perfhold, plotfit(std, twrc, label, interval='noline',
                                xlimspec=xlim, ylimspec=ylim,
                                xlabel = 'Standard Deviation',
                                ylabel = 'Cumulative TWR',
                                main   = main))
         ## add portfolio
-        points(perfport$std, perfport$twrcum, col='red', pch=16)
+        points(perfport$std, perfport$twrc, col='red', pch=16)
         ## add benchmark
-        points(perfbench$std, perfbench$twrcum, col='blue', pch=17)
+        points(perfbench$std, perfbench$twrc, col='blue', pch=17)
         ## add efficient frontier line
-        efdata.Schwab <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
-        efdata.simple <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
+        efdata.Schwab <- ef(model='Schwab', efdata=efdata, annualize=FALSE, addline=TRUE, col='black', lty=1, pch=3)
+        efdata.simple <- ef(model='simple', efdata=efdata, annualize=FALSE, addline=TRUE, col='black', lty=2, pch=4)
         mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
               side=3, line=0.8, cex=1)
         mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
               side=3, line=0, cex=1)
 
+    }
+    
+    if (sum(grepl('rra', plottype) >= 1)) {
         
-        ## ## add holdings
-        ## plot(perfhold$std, perfhold$twrcum,
-        ##      xlab = 'Standard Deviation',
-        ##      ylab = 'Cumulative TWR',
-        ##      col  = 'black', pch=1,
-        ##      xlim=xlim, ylim=ylim)
-        ## grid(col='gray70')
-        ## ## add portfolio
-        ## points(perfport$std, perfport$twrcum, col='red', pch=16)
-        ## ## add benchmark
-        ## points(perfbench$std, perfbench$twrcum, col='magenta1', pch=17)
-        ## 
-        ## ## add efficient frontier line
-        ## out <- ef(model='Schwab', efdata=efdata, addline=TRUE, col='black', lty=1, pch=3)
-        ## out <- ef(model='simple', efdata=efdata, addline=TRUE, col='black', lty=2, pch=4)
-        ## 
-        ## ## add legend
-        ## legend('bottomright', title=NULL,
-        ##        col    = c('black',   'red',       'magenta1',  'black',     'black'),
-        ##        legend = c('holding', 'portfolio', 'benchmark', 'Schwab EF', 'S&P 500 / AGG'),
-        ##        lty    = c(NA,        NA,          NA,           1,           2),
-        ##        pch    = c(1,         16,          17,           3,           4))
+        ## determine range making room for legend
+        xrange <- range(perf$std.ann, efdata$ef$efstd)
+        xlim   <- c(min(xrange),
+                    max(xrange) + 0.25*(max(xrange) - min(xrange)))
+        ylim   <- range(perf$twrc.ann, efdata$ef$eftwrc)
+
+        ## plot holdings
+        with(perfhold, plotfit(std.ann, twrc.ann, label, interval='noline',
+                               xlimspec=xlim, ylimspec=ylim,
+                               xlabel = 'Standard Deviation * sqrt(12)',
+                               ylabel = 'Annualized Cumulative TWR',
+                               main   = main))
+        ## add portfolio
+        points(perfport$std.ann, perfport$twrc.ann, col='red', pch=16)
+        ## add benchmark
+        points(perfbench$std.ann, perfbench$twrc.ann, col='blue', pch=17)
+        ## add efficient frontier line
+        efdata.Schwab <- ef(model='Schwab', efdata=efdata, annualize=TRUE, addline=TRUE, col='black', lty=1, pch=3)
+        efdata.simple <- ef(model='simple', efdata=efdata, annualize=TRUE, addline=TRUE, col='black', lty=2, pch=4)
+        mtext('(portfolio = solid red circle; benchmark = solid blue triangle)',
+              side=3, line=0.8, cex=1)
+        mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
+              side=3, line=0, cex=1)
+
     }
 
     
@@ -495,7 +515,7 @@ portfolio.eval <- function(holding,
     ## any correlation?
     if (sum(grepl('pairs', plottype) >= 1)) {
         ## identify performance info to output and use in correlation plot
-        ## pairplot <- select(perf, twrcum, std, alpha, beta, 'P/E Ratio', 'Price/Book', weight)
+        ## pairplot <- select(perf, twrc, std, alpha, beta, 'P/E Ratio', 'Price/Book', weight)
         ## pairsdf(pairplot)
         pairsdf(as.data.frame(twriall))
     }
