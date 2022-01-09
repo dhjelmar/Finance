@@ -1,5 +1,5 @@
 ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period='months',
-               addline=FALSE, col='black', lty=1, pch=3) {
+               annualize=TRUE, addline=TRUE, col='black', lty=1, pch=3) {
     ## create Efficient Frontier points to assess TWR vs. risk
     
     ## model = 'Schwab' uses a blend of US L, US S, Inter, Fixed, and Cash
@@ -56,13 +56,29 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
         twri[4,] <- c(0.1, 0.14, 0.11, 0.1, 0.1)
     }
         
-    ## calculate twrcum and standard deviation
-    ## 1st date should have twrcum = 0
-    ## twrcum_apply <- apply(twri, 2, function(x) { prod(x+1) - 1 }) / (twri[1,] + 1)
-    twrcum  <- xts::as.xts( t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1) )
-    twrcuml <- tail(twrcum, 1)
+    ## calculate twrc and standard deviation
+    ## 1st date should have twrc = 0
+    ## twrc_apply <- apply(twri, 2, function(x) { prod(x+1) - 1 }) / (twri[1,] + 1)
+    twrc  <- xts::as.xts( t(t(cumprod(twri+1)) / as.vector(twri[1,]+1) - 1) )
+    twrcl <- tail(twrc, 1)
     std    <- apply(twri[2:nrow(twri)], 2, sd)
 
+    if (isTRUE(annualize)) {
+        
+        ## calculate annualized standard deviation from monthly standard deviation
+        ##    std(xi) = sqrt ( sum(xi-xbar)^2 / N ) for population which seems to be what finance world uses
+        ## If have x = monthly TWR and want std for y = yearly TWR
+        ## then set F * std(x) = std(y) and solve for F.
+        ## If assume yi = 12*xi and give credit for the fact that 1 yearly entry is from 12 measurments, 
+        ## then can use Ny = 12*Nm and F = sqrt(12).
+        ## std( TWR_monthly - avg_TWR_monthly )
+        std  <- std * 12^0.5  
+
+        ## average annual return
+        days.held <- as.numeric(as.Date(to) - as.Date(from))
+        twrcl  <- (1 + twrcl)^(365.25 / days.held) - 1
+    }
+        
     ## define asset class weights for requested benchmark model
     if (model == 'Schwab') {
         ##              US L  US S  Inter Fixed  Cash
@@ -99,7 +115,7 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
     ## ## approximation (not too bad for twr;
     ##                   no good for sd since different benchmarks can compensate for eachother)
     ## ## calculate benchmark twr to define efficient frontier twr
-    ## eftwr <- weight %*% twrcum          # column vector
+    ## eftwr <- weight %*% twrc          # column vector
     ## colnames(eftwr) <- 'EF TWR'
 
     ## calculate twri for efficient frontier model
@@ -108,19 +124,26 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
     eftwri <- xts::as.xts( zoo::as.zoo( eftwri, zoo::index(twri)))
 
     ## calculate cumulative twr and standard deviation
-    eftwrcum  <- t(t(cumprod(eftwri+1)) / as.vector(eftwri[1,]+1) - 1)
-    eftwrcuml <- t( xts::last(eftwrcum) )
-    colnames(eftwrcuml) <- 'eftwrcum'
+    eftwrc  <- t(t(cumprod(eftwri+1)) / as.vector(eftwri[1,]+1) - 1)
+    eftwrcl <- t( xts::last(eftwrc) )
+    colnames(eftwrcl) <- 'eftwrc'
     efstd <- as.matrix( apply(eftwri[2:nrow(eftwri),], 2, sd) )  # column vector
     colnames(efstd)  <- 'efstd'
 
-    ef <- as.data.frame( cbind(eftwrcuml, efstd) )
-    
-    if (isTRUE(addline)) {
-      lines(ef$efstd, ef$eftwrcum, type='b', col=col, lty=lty, pch=pch)
+    if (isTRUE(annualize)) {
+        ## calculate annualized standard deviation from monthly standard deviation
+        eftwrcl <- (1 + eftwrcl)^(365.25 / days.held) - 1
+        efstd   <- efstd * 12^0.5  
     }
     
-    return(list(model=model, weight=weight, twri_in=twri_in, twri=twri, twrcum=twrcum, std=std,
+    ef <- as.data.frame( cbind(eftwrcl, efstd) )
+    
+    if (isTRUE(addline)) {
+        ## plot lines for whatever period the data was supplied for
+        lines(ef$efstd, ef$eftwrc, type='b', col=col, lty=lty, pch=pch)
+    }
+    
+    return(list(model=model, weight=weight, twri_in=twri_in, twri=twri, twrc=twrc, std=std,
                 eftwri=eftwri, ef=ef, from=from, to=to))
 }
 ## ef(from='2020-12-31', to='2021-11-11')
