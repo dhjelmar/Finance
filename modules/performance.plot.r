@@ -51,7 +51,7 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
 
     ## create risk/return plot
     out2 <- portfolio.eval(portfolio, twri=twrsheet.use, twrib='SPY', value=valuesheet.use,
-                           plottype = c('rr', 'ab'),
+                           plottype = c('rra', 'ab'),
                            from=from, to=to, period=period,
                            main = paste(main, '; bench=SPY', sep=''))
     ## above can be made more efficient to not look everything up again
