@@ -50,15 +50,17 @@ portfolio     <-  church
 portfolioname <- 'Church'
 
 period        <- 'months'
-xtsrange      <- '2020-12/2021-12'
+xtsrange      <- '2016-12/2021-12'
 
 ##-----------------------------------------------------------------------------
 ## define benchmarks
 from <- zoo::index(twrsheet[1,])
 to   <- zoo::index(xts::last(twrsheet))
 ## efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE)
-efdata <- ef(model='Schwab', adjdates=c(as.Date('2016-11-30'), 
-                                        zoo::index(twrsheet)))
+## adjdates set to 1 month earlier than twrsheet so can use entire range available
+efdata <- ef(model='Schwab', addline=FALSE, 
+             adjdates=c(as.Date('2016-11-30'), 
+                        zoo::index(twrsheet)))
 twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
 check  <- identical(zoo::index(twrib), zoo::index(twrsheet))
 check  # need this to be true
@@ -92,13 +94,15 @@ perf <- as_tibble( out$out.xtsrange$performance )  # tibble conversion strips th
 perf
 
 df <- perf
-df[2:4]   <- sapply(df[2:4], function(x) scales::percent(x, accuracy=0.01))
-df$beta   <- round(df$beta  , 3)
-df$weight <- round(df$weight, 2)
-df$value  <- scales::dollar(df$value)
+## change twrc, std, twrc.ann, and std.ann to character and apply % sign
+df[2:5]   <- sapply(df[2:5], function(x) scales::percent(x, accuracy=0.01))
+df$alpha   <- round(df$alpha , 3)
+df$beta    <- round(df$beta  , 3)
+df$weight  <- round(df$weight, 2)
+df$value   <- scales::dollar(df$value)
 ## print as data frame rather than tibble so right justifies
-print( as.data.frame(df) )
-
+df <- as.data.frame(df)
+df
          
 ## same as above but creates pdf file with plot output
 out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
