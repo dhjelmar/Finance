@@ -104,9 +104,10 @@ portfolio.eval <- function(holding,
 
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
     ##        weight    = vector of weights to use for rebalancing
-    ##        rebalance = 'period' (default) to rebalance every period to same weight
+    ##        rebalance = 'no' to let assets grow without rebalancing
+    ##                  = 'period' (default) to rebalance every period to same weight
+    ##                    (note: this is what ef.r currently assumes)
     ##                  = 'years' to rebalance at end of each year
-    ##                  = 'no' to let assets grow without rebalancing
     ##        value     = matrix of values for each holding for each period
     ##        twri      = xts object with output from equity.twri, if provided, for holdings
     #3                    xts object can contain more than what is in holding
@@ -142,6 +143,9 @@ portfolio.eval <- function(holding,
     
     ## if (twrib == 'SPY') browser()
     
+    ## understand requested xts range of dates
+    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
+    
     ## get equity history
     if (is.null(twri)) {
         twri_provided <- FALSE
@@ -163,6 +167,7 @@ portfolio.eval <- function(holding,
     } else {
         ## xts object provided for twrib
         twrib_provided <- TRUE
+        twrib <- twrib[xtsrange]
         if (!identical(zoo::index(twri), zoo::index(twrib))) {
             cat('\n############################################################\n')
             cat('  # Error: Provided twri and twrib do not have the same dates\n')
@@ -219,29 +224,40 @@ portfolio.eval <- function(holding,
         value0.port <- apply(value0, 1, sum)                    # sum rows
         twri.port   <- value.port / value0.port - 1
         weight      <- as.numeric( value[nrow(value),] / sum(value[nrow(value),]) )
+        
     } else if (class(weight) == 'numeric') {
+        ## value over time is not defined, so use initial weight instead
+        
         if (rebalance == 'no') {
             ## let assets grow without rebalancing (i.e., determine new weight after every period)
             ## need to determine weight as a function of time
-            weight0 <- weight
-            value0.port <- 1   # initialize value of portfolio at time t-1
-            twri.port   <- NA  # initialize vector for portfolio twri
-            for (i in 1:nrow(twri)) {
-                value.hold   <- (twri[1,] + 1) * weight * value0.port     # element-wise multiplication
-                value.port   <- sum(value.hold)
-                twri.port[i] <- value.port / value0.port
-                weight       <- value.hold / value.port
-                value0.port  <- value.port
-            }
+            ## first restrict twri to xtsrange
+            twri <- twri[xtsrange]
+            ## create empty xts object for value
+            ## value.port <- 1
+            value      <- xts.create(datevec=zoo::index(twri), value=NA, names=names(twri))
+            value.port <- xts.create(datevec=zoo::index(twri), value=NA, names='portfolio')
+            value.port[1] <- 1
+            value[1,]  <- weight * value.port[[1]]
+            twri.port  <- xts.create(datevec=zoo::index(twri), value=0, names='portfolio')
+            for (i in 2:nrow(twri)) {
+                value[i,]     <- (twri[i,] + 1) * weight * value.port[[i-1]]  # new value for each holding
+                value.port[i] <- sum(value[i,])                               # portfolio value
+                twri.port[i]  <- value.port[[i]] / value.port[[i-1]] - 1      # portfolio twri
+                weight        <- as.vector( value[i,] / value.port[[i]] )     # new weights
+            }                
+
         } else if (rebalance == 'years') {
             ## rebalance at the end of every calendar year (dlh future option)
             cat('\nError: Option "rebalance = \'years\'" not programmed yet\n')
             return()
+            
         } else {
             ## rebalance = 'period' (default)
-            ## hold weight constant throughout the evaluation (i.e., rebalance every period)
+            ## rebalance every period (i.e., hold weight constant throughout the evaluation)
             twri.port <- twri %*% as.matrix(weight)  # %*% specifies matrix multiplication
         }
+        
     } else {
         cat('\nError: input "value" is not an xts object or input "weight" is not a numeric vector\n')
         return()
@@ -261,7 +277,6 @@ portfolio.eval <- function(holding,
     twrib.col.end   <- twri.col + 1 + twrib.col
     
     ## restrict to duration
-    xtsrange <- paste(noquote(from), '/', noquote(to), sep='')
     twriall <- twriall[xtsrange]
 
     if (is.null(efdata)) {
