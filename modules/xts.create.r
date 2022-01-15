@@ -6,7 +6,7 @@ xts.create <- function(datevec, value=1, names='xts.created') {
     if (class(value) != 'matrix') {
         mat <- matrix(value, 
                       nrow=length(datevec),
-                      ncol=1)
+                      ncol=length(names))
         colnames(mat) <- names
     }
     zoo <- zoo::as.zoo(mat, as.Date(datevec))
