@@ -253,6 +253,8 @@ df <- plotoften(twrc_EOY_long, 2008, 4)
 ## look at last 1, 3, 5 years for current year holdings
 symbols <- as.character( holding[nrow(holding), 2:ncol(holding)] )
 out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2020-12-31', to='2021-12-31')
+out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2018-12-31', to='2021-12-31')
+out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2016-12-31', to='2021-12-31')
 
 
 
