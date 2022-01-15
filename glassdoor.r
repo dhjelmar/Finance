@@ -37,6 +37,7 @@ year    hold1   hold2   hold3   hold4   hold5   hold6   hold7   hold8   hold9   
 2019    BCSF    GOOGL   LULU    LUV     CRM     ISRG    HUBS    DOCU    PCTY    SAP   # ZM in top 10 but not public until 4/2019
 2020    HUBS    BCSF    DOCU    ISRG    LUV     GOOGL   NVDA    MSFT    LULU    CPT
 2021    BCSF    NVDA    HUBS    GOOGL   DAL     LULU    MSFT    SYK     DOCU    CRM   # META and KNBE in top 10 but not public until 6/2021 and 5/2021
+2022    NVDA    HUBS    BOX     GOOGL   LULU    CRM     RCL     FIVN    TWLO    ADBE
 '
 holding <- readall(holdings)
 
@@ -187,13 +188,14 @@ for (i in 1:nrow(holding)) {
     symbols <- holding[i,2:(nhold+1)]
     from  <- paste(yearim1, '-12-31', sep='')
     to    <- paste(yeari  , '-12-31', sep='')
-    duration <- paste(from, 'to', to, sep=' ')
-    twri.yeari <- twri_list[[i]][yeari]
+    xtsrange <- paste(from, '/', to, sep='')
+    twri.yeari <- twri_list[[i]][xtsrange]
     ## twrc.yeari <- xts::as.xts( t(t(cumprod(twri.yeari+1)) / as.vector(twri.yeari[1,]+1) - 1) )
     out <- portfolio.eval(symbols, weight=weight, twri=twri.yeari, twrib=twrib,
+                          rebalance = 'period',  # should be 'years' but not programmed yet
                           plottype = c('twrc', 'rr', 'twri', 'ab'),
                           from=from, to=to, period=period,
-                          main = paste(portfolioname, '; duration =', duration, sep=' '))
+                          main = paste(portfolioname, '; duration =', xtsrange, sep=' '))
 }
 
 ## collect results
@@ -247,6 +249,11 @@ plotoften <- function(df, year, freq) {
     return(df)
     }
 df <- plotoften(twrc_EOY_long, 2008, 4)
+
+## look at last 1, 3, 5 years for current year holdings
+symbols <- as.character( holding[nrow(holding), 2:ncol(holding)] )
+out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2020-12-31', to='2021-12-31')
+
 
 
 if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
