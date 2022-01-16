@@ -84,6 +84,17 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
     ## twrib.std  <- sd(twrib[2:nrow(twrib)])
     ## twrib.twrc <- twrc.calc(twrib, zero.from=TRUE)
     ## points(twrib.std, xts::last(twrib.twrc))
+
+
+    ##-----------------------------------------------------------------------------
+    ## test
+    symbols <- c('NVDA', 'HUBS', 'BOX', 'GOOGL', 'LULU', 'CRM', 'RCL', 'FIVN', 'TWLO', 'ADBE')
+    twri <- equity.twri(symbols, period='months')
+    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2020-12-31', to='2021-12-31')
+    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2018-12-31', to='2021-12-31')
+    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2016-12-31', to='2021-12-31')
+
+    
 }
 
 portfolio.eval <- function(holding,
@@ -104,6 +115,7 @@ portfolio.eval <- function(holding,
 
     ## given: holding   = vector of 1 or more symbols of holdings in portfolio
     ##        weight    = vector of weights to use for rebalancing
+    ##                  = NA = 1/length(holding) if value is not supplied
     ##        rebalance = 'no' to let assets grow without rebalancing
     ##                  = 'period' (default) to rebalance every period to same weight
     ##                    (note: this is what ef.r currently assumes)
@@ -160,10 +172,12 @@ portfolio.eval <- function(holding,
             twri  <- equity.twri(holding, period=period)
         }
     }
+    twri <- twri[xtsrange]
     
     if (class(twrib)[1] != 'xts') {
         ## symbol provided rather than XTS object
         twrib <- equity.twri(twrib  , period=period)        
+        twrib <- twrib[xtsrange]
     } else {
         ## xts object provided for twrib
         twrib_provided <- TRUE
@@ -225,8 +239,11 @@ portfolio.eval <- function(holding,
         twri.port   <- value.port / value0.port - 1
         weight      <- as.numeric( value[nrow(value),] / sum(value[nrow(value),]) )
         
-    } else if (class(weight) == 'numeric') {
+    } else {
         ## value over time is not defined, so use initial weight instead
+
+        ## assume equal weights if not defined
+        if (is.na(weight)) weight <- rep(1/length(holding), length(holding))
         
         if (rebalance == 'no') {
             ## let assets grow without rebalancing (i.e., determine new weight after every period)
@@ -257,20 +274,14 @@ portfolio.eval <- function(holding,
             ## rebalance every period (i.e., hold weight constant throughout the evaluation)
             twri.port <- twri %*% as.matrix(weight)  # %*% specifies matrix multiplication
         }
-        
-    } else {
-        cat('\nError: input "value" is not an xts object or input "weight" is not a numeric vector\n')
-        return()
     }        
     
     ## turn back into xts
     portfolio <- xts::as.xts( zoo::as.zoo( as.matrix(twri.port), zoo::index(twri)))
     colnames(portfolio) <- 'portfolio'
     
-    ## combine into single xts object and call the benchmark "benchmark"
-    ## colnames(twrib) <- 'benchmark'
+    ## combine into single xts object
     twriall <- cbind(twri, portfolio, twrib)
-    colnames(twriall) <- c(colnames(twri), colnames(portfolio), colnames(twrib))
     twri.col        <- ncol(twri)
     twrib.col       <- ncol(twrib)
     twrib.col.start <- twri.col + 1 + 1
@@ -333,6 +344,7 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twrc, main=main) )
         xts <- twrc
         pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Cumulative TWR', main=main,
+                            col=c(1:twri.col),
                             ylim=range(xts, na.rm=TRUE))
         pp <- xts::addSeries(xts$portfolio,
                              on=1, col='red'    , lwd=2, lty=2)
@@ -342,7 +354,7 @@ portfolio.eval <- function(holding,
         pp <- xts::addLegend("topleft",
                              legend.names = legend.names, 
                              lty=c(rep(1, twri.col), 2, 2, 3),
-                             col=c(    1:(1 + twrib.col), 'red', 'black', 'cyan'))
+                             col=c(    1: twri.col, 'red', 'black', 'cyan'))
         plot(pp)
     }
     
@@ -476,6 +488,7 @@ portfolio.eval <- function(holding,
         ## plot( plotxts(twriall, main=main) )
         xts <- twriall
         pp <- xts::plot.xts(xts[, 1:twri.col], ylab='Incremental TWR', main=main,
+                            col=c(1:twri.col),
                             ylim=range(xts, na.rm = TRUE))
         pp <- xts::addSeries(xts$portfolio,
                              on=1, col='red'    , lwd=2, lty=2)
@@ -485,7 +498,7 @@ portfolio.eval <- function(holding,
         pp <- xts::addLegend("topleft",
                              legend.names = legend.names, 
                              lty=c(rep(1, twri.col), 2, 2, 3),
-                             col=c(    1:(1 + twrib.col), 'red', 'black', 'cyan'))
+                             col=c(    1: twri.col, 'red', 'black', 'cyan'))
         plot(pp)
     }
 
