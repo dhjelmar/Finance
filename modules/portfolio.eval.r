@@ -295,8 +295,8 @@ portfolio.eval <- function(holding,
         symbol      <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
         efdata      <- list()  # declares efdata as a list
         efdata$twri <- equity.twri(symbol, adjdates = adjdates)
-        efdata$twri <- efdata$twri[xtsrange]
     }
+    efdata$twri <- efdata$twri[xtsrange]
         
     ## establish other parameters in efdata using the defined efdata$twri
     efdata <- ef(model='Schwab', efdata=efdata, addline=FALSE, col='black', lty=1, pch=3)
