@@ -6,6 +6,9 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
     ##       = 'SSP'    uses a blend of US L           and Fixed
 
     ## duration defined from one of the following
+    ## addline == FALSE:
+    ##     if false, then execution is assumed primarily to obtain output
+    ##     for subsequent call with ef(symbols, efdata=efdata, from=xx, to=yy)
     ## from, to, and period:
     ##     from   = end of day to start
     ##     to     = end of day to end
@@ -26,7 +29,11 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
     if (is.na(efdata[1])) {
         ## efdata is not provided so need to get it
         symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
-        if (is.null(adjdates)) {
+        if (isFALSE(addline)) {
+            ## do not worry about dates and just get data for subsequent call to ef()
+            out <- equity.twri(symbol)
+            twri <- na.omit(out)
+        } else if (is.null(adjdates)) {
             out  <- equity.history(symbol, from=from, to=to, period=period)
             twri <- na.omit( out$twri )
         } else {
