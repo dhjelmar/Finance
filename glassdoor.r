@@ -24,7 +24,14 @@ for (f in r_files) {
 ## options
 
 ## look up all holdings and write to file (TRUE) or read from file (FALSE)
-refresh <- TRUE
+refresh <- FALSE
+
+## starting value of portfolio and period for each twri value
+value_last <- 10000
+period     <- 'months'
+
+## create PDF (TRUE) or plot to screen (FALSE)
+createpdf <- FALSE
 
 ##-----------------------------------------------------------------------------
 
@@ -55,10 +62,6 @@ nhold   <- ncol(holding)-1
 ## equal weight for each holding (units = fraction of total portfolio value)
 weight   <- rep(1/nhold, nhold)
 
-## starting value of portfolio and period for each twri value
-value_last <- 10000
-period     <- 'days'
-
 ## read in twri for portfolio if desired and available
 if (isFALSE(refresh)) {
   twri.csv <- readall('glassdoor_twri.csv')
@@ -71,6 +74,10 @@ if (isFALSE(refresh)) {
 
   twri.rds <- readRDS('glassdoor_twri.rds')
 }
+
+## obtain twrib and efdata xts objects
+twrib  <- equity.twri('SPY', period=period)
+efdata <- ef(model='Schwab', period=period, addline=FALSE)
 
 ## initialize xts objects
 twri_list <- NA
@@ -101,10 +108,11 @@ for (i in 1:nrow(holding)) {
     }
     twri.yeari <- twri.yeari[xtsrange]
 
-    if (nrow(twri.yeari) < 2) {
+    if (nrow(twri.yeari) < 3) {
         ## there are fewer than two rows of data for the given year
         ## break out of loop to skip the year 
-        ## because more than 2 entries are needed for a standard deviation
+        ## because 1st row should be from prior year,
+        ## and need at least 2 more entries for a standard deviation
         cat('\nSkipping', yeari, '; insufficient number of dates to evaluate.\n')
         yeari.stop <- yeari
         break
@@ -171,7 +179,6 @@ std     <- t( as.matrix( apply(twri[2:nrow(twri),], 2, sd, na.rm=TRUE) ) )
 ##     plot( plotxts(twrc.yeari) )
 ## }
 
-createpdf <- TRUE
 if (isTRUE(createpdf)) pdf(file = "glassdoor.pdf", onefile = TRUE,          # creates a multi-page PDF file
                            ## file = "glassdoor%03d.pdf", onefile = FALSE,  # creates multiple PDF files
                            width = 9,  # The width of the plot in inches
@@ -182,7 +189,8 @@ portfolioname <- 'Glassdoor'
 from  <- '2008-12-31'
 to    <- '2021-12-31'
 duration <- paste(from, 'to', to, sep=' ')
-out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri, twrib='SPY',
+out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri,
+                      twrib='SPY', efdata=efdata,
                       plottype = c('twrc', 'rr', 'twri', 'ab'),
                       from=from, to=to, period=period,
                       main = paste(portfolioname, ': ', duration, 
@@ -192,8 +200,6 @@ out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri, twr
 out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio, period=period)
 
 ## plot performance during each year of portfolio
-twrib  <- equity.twri('SPY', period=period)
-efdata <- ef(model='Schwab', addline=FALSE)
 for (i in 1:nrow(holding)) {
     yeari <- as.character(holding[i,1])
     if (yeari == yeari.stop) break  # too few rows to evaluate
@@ -219,12 +225,14 @@ twrc_EOY_long <- as.data.frame( matrix(NA, nrow=nrow(holding), ncol=3) )
 names(twrc_EOY_long) <- c('year', 'holding', 'twrc')
 k <- 0
 for (i in 1:nrow(holding)) {
-  twrc_EOY[i,] <- c(holding[i,1], as.numeric( tail(twrc_list[[i]], 1) ) )
-  for (j in 1:(nhold+1)) {
-      k <- k+1
-      ##                     year        , holding          , twrc
-      twrc_EOY_long[k,] <- c(holding[i,1], names(twrc_list[[i]])[j], twrc_EOY[[i,1+j]])
-  }
+    yeari <- as.character(holding[i,1])
+    if (yeari == yeari.stop) break  # too few rows to evaluate  
+    twrc_EOY[i,] <- c(holding[i,1], as.numeric( tail(twrc_list[[i]], 1) ) )
+    for (j in 1:(nhold+1)) {
+        k <- k+1
+        ##                     year        , holding          , twrc
+        twrc_EOY_long[k,] <- c(holding[i,1], names(twrc_list[[i]])[j], twrc_EOY[[i,1+j]])
+    }
 }
 holding
 twrc_EOY
@@ -250,7 +258,14 @@ barit <- function(df, year) {
     
     return(df)
 }
-barit(twrc_EOY_long, 2008)
+out <- barit(twrc_EOY_long, 2008)
+out
+out.abc <- out[order(out$holding),]
+out.abc
+holding.find <- function(symbol, df=holding) {
+    df[apply(df, 1, function(r) any(r %in% symbol)),]
+}
+holding.find('PG')
 
 plotoften <- function(df, year, freq) {
     ## plot holdings held at least freq years since year
@@ -270,7 +285,6 @@ symbols <- as.character( holding[nrow(holding), 2:ncol(holding)] )
 out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2020-12-31', to='2021-12-31')
 out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2018-12-31', to='2021-12-31')
 out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2016-12-31', to='2021-12-31')
-
 
 
 if (isTRUE(createpdf)) dev.off() # close external pdf (or jpg) file
