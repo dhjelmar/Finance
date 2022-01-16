@@ -1,4 +1,5 @@
-performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
+performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, efdata,
+                             xtsrange, period,
                              portfolioname = NULL, file = NULL) {
     
     
@@ -28,7 +29,8 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
     ## create cumulative and incremental TWR plots
     ## period = days used in the following so there is a unique value for every date read from Excel
     ## all date entries are consisered equally in evaluation of standard deviation, alpha, and beta
-    out1 <- portfolio.eval(portfolio, twri=twrsheet, twrib=twrib, value=valuesheet,
+    out1 <- portfolio.eval(portfolio, twri=twrsheet, twrib=twrib, efdata=efdata,
+                           value=valuesheet,
                            plottype = c('twrc', 'twri'), arrange=FALSE,
                            from=from, to=to, period=period,
                            main = paste(main, '; bench=', names(twrib), sep=''))
@@ -50,7 +52,8 @@ performance.plot <- function(portfolio, valuesheet, twrsheet, twrib, xtsrange, p
     }   
 
     ## create risk/return plot
-    out2 <- portfolio.eval(portfolio, twri=twrsheet.use, twrib='SPY', value=valuesheet.use,
+    out2 <- portfolio.eval(portfolio, twri=twrsheet.use, twrib='SPY', efdata=efdata,
+                           value=valuesheet.use,
                            plottype = c('rra', 'ab'),
                            from=from, to=to, period=period,
                            main = paste(main, '; bench=SPY', sep=''))
