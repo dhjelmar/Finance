@@ -21,6 +21,12 @@ for (f in r_files) {
 }
 
 ##-----------------------------------------------------------------------------
+## options
+
+## look up all holdings and write to file (TRUE) or read from file (FALSE)
+refresh <- TRUE
+
+##-----------------------------------------------------------------------------
 
 holdings <- '
 year    hold1   hold2   hold3   hold4   hold5   hold6   hold7   hold8   hold9   hold10
@@ -54,7 +60,6 @@ value_last <- 10000
 period     <- 'days'
 
 ## read in twri for portfolio if desired and available
-refresh <- FALSE
 if (isFALSE(refresh)) {
   twri.csv <- readall('glassdoor_twri.csv')
   rownames(twri.csv) <- twri.csv$X
@@ -74,8 +79,9 @@ twrc_list <- NA
 value     <- NA
 
 ## evaluate portfolio
+yeari.stop <- 99999
 for (i in 1:nrow(holding)) {
-
+  
     ## extract year from holding dataframe
     yeari <- as.character(holding[i,1])
     cat('year = ', yeari, '\n')
@@ -95,9 +101,15 @@ for (i in 1:nrow(holding)) {
     }
     twri.yeari <- twri.yeari[xtsrange]
 
-    ## ## until list of holdings gets fixed, set NA to zero
-    ## twri.yeari[is.na(twri.yeari)] <- 0
-    
+    if (nrow(twri.yeari) < 2) {
+        ## there are fewer than two rows of data for the given year
+        ## break out of loop to skip the year 
+        ## because more than 2 entries are needed for a standard deviation
+        cat('\nSkipping', yeari, '; insufficient number of dates to evaluate.\n')
+        yeari.stop <- yeari
+        break
+    }
+
     ## calculate twri for portfolio
     twri.yeari$portfolio <- twri.yeari %*% weight
 
@@ -180,9 +192,11 @@ out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri, twr
 out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio, period=period)
 
 ## plot performance during each year of portfolio
-twrib <- equity.twri('SPY', period=period)
+twrib  <- equity.twri('SPY', period=period)
+efdata <- ef(model='Schwab', addline=FALSE)
 for (i in 1:nrow(holding)) {
     yeari <- as.character(holding[i,1])
+    if (yeari == yeari.stop) break  # too few rows to evaluate
     cat('Creating plots for year =', yeari, '\n')
     yearim1 <- as.character(holding[i,1]-1)
     symbols <- holding[i,2:(nhold+1)]
@@ -191,7 +205,7 @@ for (i in 1:nrow(holding)) {
     xtsrange <- paste(from, '/', to, sep='')
     twri.yeari <- twri_list[[i]][xtsrange]
     ## twrc.yeari <- xts::as.xts( t(t(cumprod(twri.yeari+1)) / as.vector(twri.yeari[1,]+1) - 1) )
-    out <- portfolio.eval(symbols, weight=weight, twri=twri.yeari, twrib=twrib,
+    out <- portfolio.eval(symbols, weight=weight, twri=twri.yeari, twrib=twrib, efdata=efdata,
                           rebalance = 'period',  # should be 'years' but not programmed yet
                           plottype = c('twrc', 'rr', 'twri', 'ab'),
                           from=from, to=to, period=period,
@@ -252,9 +266,10 @@ df <- plotoften(twrc_EOY_long, 2008, 4)
 
 ## look at last 1, 3, 5 years for current year holdings
 symbols <- as.character( holding[nrow(holding), 2:ncol(holding)] )
-out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2020-12-31', to='2021-12-31')
-out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2018-12-31', to='2021-12-31')
-out <- portfolio.eval(symbols, weight=rep(1, length(symbols)), twrib='SPY', from='2016-12-31', to='2021-12-31')
+## twri <- equity.twri(symbols, period='months')
+out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2020-12-31', to='2021-12-31')
+out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2018-12-31', to='2021-12-31')
+out <- portfolio.eval(symbols, twri=twri, twrib='SPY', efdata=efdata, from='2016-12-31', to='2021-12-31')
 
 
 
