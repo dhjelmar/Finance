@@ -27,8 +27,8 @@ for (f in r_files) {
 refresh <- FALSE
 
 ## starting value of portfolio and period for each twri value
-value_last <- 10000
-period     <- 'months'
+value.start <- 10000
+period      <- 'months'
 
 ## create PDF (TRUE) or plot to screen (FALSE)
 createpdf <- FALSE
@@ -80,10 +80,11 @@ twrib  <- equity.twri('SPY', period=period)
 efdata <- ef(model='Schwab', period=period, addline=FALSE)
 
 ## initialize xts objects
-twri_list <- NA
-## twri      <- NA
-twrc_list <- NA
-value     <- NA
+twri_list  <- NA
+## twri    <- NA
+twrc_list  <- NA
+value_last <- value.start
+value      <- NA
 
 ## evaluate portfolio
 yeari.stop <- 99999
@@ -132,7 +133,12 @@ for (i in 1:nrow(holding)) {
     twrc_list[i] <- list(twrc.yeari)
 
     ## calculate value of portfolio
-    value.yeari <- twrc.yeari * value_last
+    ## test:
+    ##    matrix <- matrix(rep(1:3,each=5),nrow=3,ncol=5,byrow=TRUE)   # dim 3, 5
+    ##    vector <- 1:5                                                # dim 1, 5
+    ##    t( t(matrix) * vector )
+    value.yeari <- t( t(1 + twrc.yeari) * c(weight,1) * value_last ) # weight for each holding; 1 for portfolio
+    value.yeari <- xts::as.xts(value.yeari)
     
     ## resest portfolio value to be used for next year purchases and growth
     value_last  <- value.yeari[nrow(value.yeari),]$portfolio[[1]]
