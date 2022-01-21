@@ -89,11 +89,15 @@ portfolio.eval_test <- function(twri=NULL, twrib=NULL) {
     ##-----------------------------------------------------------------------------
     ## test
     symbols <- c('NVDA', 'HUBS', 'BOX', 'GOOGL', 'LULU', 'CRM', 'RCL', 'FIVN', 'TWLO', 'ADBE')
-    twri <- equity.twri(symbols, period='months')
-    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2020-12-31', to='2021-12-31')
-    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2018-12-31', to='2021-12-31')
-    out <- portfolio.eval(symbols, twri=twri, twrib='SPY', from='2016-12-31', to='2021-12-31')
-
+    period  <- 'months'
+    twri    <- equity.twri(symbols, period=period)
+    twrib   <- equity.twri('SPY',   period=period)
+    efdata  <- ef(addline=FALSE)
+    out <- portfolio.eval(symbols, twri=twri, twrib=twrib, efdata=efdata, from='2020-12-31')
+    out <- portfolio.eval(symbols, twri=twri, twrib=twrib, efdata=efdata, from='2018-12-31')
+    out <- portfolio.eval(symbols, twri=twri, twrib=twrib, efdata=efdata, from='2016-12-31')
+    
+    out <- portfolio.eval(symbols, period='days', twrib='SPY', from='2021-12-31')
     
 }
 
@@ -105,7 +109,7 @@ portfolio.eval <- function(holding,
                            twrib     = 'SPY',
                            efdata    = NULL,
                            from,
-                           to  ,
+                           to        = Sys.Date(),
                            period='months',
                            na = 'omit',
                            plottype=c('twrc', 'rr', 'twri', 'ab'),
