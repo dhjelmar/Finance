@@ -1,10 +1,14 @@
-twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
+twri.adjust <- function(xts, d2m=FALSE, dates.new=NA, twri.input=TRUE) {
 
     ## ADJUST DATES FOR XTS OBJECT TO CLOSEST DATES THE MARKET IS OPEN
 
     ## Input: xts = XTS object (does not have to be an XTS of twri values)
+    ##        align = TRUE (default) aligns xts dates to closest market dates
     ##        d2m = FALSE (default) does not attempt to convert xts column values
     ##            = TRUE assumes xts object contains twri values and converts from days to months
+    ##        dates.new = NA (default) option is ignored
+    ##                  = vector of new, more coarse dates to align xts object to rather than months
+    ##                    (d2m is ignored in this case)
 
     ## Output: xts object with potentially new dates and potentially new values
 
@@ -13,29 +17,40 @@ twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
 
     ## determine the dates the market is open
     out <- equity.history('SPY', period='days')
-
+    
     ## function to find the closest match
     closest <- function(x, findin=out$market.open.days) {
         ## market.open[findInterval(as.Date('2021-01-31'), as.Date(market.open))]
         findin[findInterval(as.Date(x), as.Date(findin))]
     }
     ## closest('2021-01-31')
-
+    
     ## apply function to find closest match
     adjust <- unlist( purrr::pmap(list(x = xtsdates), function(x) closest(x)) )
     zoo::index(xts) <- as.Date(adjust, origin='1970-01-01')
-
+        
     ##-----------------------------------------------------------------------------
-    if (isTRUE(d2m)) {
-        ## convert to months
+    if (isTRUE(d2m) | !is.na(dates.new)) {
+        ## convert to months or provided dates
 
         ## number of columns in original xts object
         xts.cols <- ncol(xts)
-        
-        ## create xts object from market open months for the range of the input xts object
-        xts.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
-        xts.open  <- xts.create(out$market.open.months, 1)[xts.range]
 
+        ## define range of dates in input xts object
+        xts.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
+        
+        if (is.na(dates.new)) {
+            ## create xts object from market open months for the input xts range
+            xts.open <- xts.create(out$market.open.months, 1)[xts.range]
+        } else {
+            ## create xts object from provided dates for the input xts range
+            xts.open <- xts.create(dates.new, 1)[xts.range]
+            ## narrow the range of the input xts object if it is wider than for xts.open
+            xts.range.open <- paste(zoo::index(xts.open[1]), '/',
+                                    zoo::index(xts.open[nrow(xts.open)]), sep='')
+            xts <- xts[xts.range.open]
+        }
+            
         ## combine the two xts objects
         xts.names      <- names(xts)
         xts.open.names <- names(xts.open)
@@ -132,3 +147,25 @@ twri.adjust <- function(xts, d2m=FALSE, twri.input=TRUE) {
 ## tail(cc.adj.twrc)
 ## comb <- cbind(cc.twrc, cc.adj.twrc)
 ## plot(zoo::na.approx(comb),screens=1,auto.legend=TRUE)
+
+
+## ## adjust days to some alternate set of dates (i.e., not just month ends)
+## fine <- equity.twri('SPY', period='days')['2019-12/2020']
+## dates.coarse <- c('2019-12-31', '2020-01-31', '2020-02-20', '2020-02-28',
+##                   '2020-03-23', '2020-03-31', '2020-04-30 ')
+## coarse       <- twri.adjust(fine, dates.new = dates.coarse)
+## ## check that both have same twrc for same duration
+## xtsrange <- paste(dates.coarse[1], '/', dates.coarse[length(dates.coarse)], sep='')
+## xtsrange <- '2019-12-31/2020-01-31'
+## fine[xtsrange]
+## coarse[xtsrange]
+## fine.twrc    <- cumprod(fine[xtsrange]   + 1) - 1 
+## coarse.twrc  <- cumprod(coarse[xtsrange] + 1) - 1
+## diff <- tail(coarse.twrc,1) - tail(fine.twrc,1)
+## if (sum(abs(diff)) < 0.0001) {
+##     cat('Verification checks out\n')
+##     print(diff)
+## } else { 
+##     cat('Verification error\n')
+##     print(diff)
+## }
