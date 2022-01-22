@@ -53,41 +53,74 @@ period        <- 'months'
 xtsrange      <- '2016-12/2021-12'
 
 ##-----------------------------------------------------------------------------
-## define benchmarks
-from <- zoo::index(twrsheet[1,])
-to   <- zoo::index(xts::last(twrsheet))
-## efdata <- ef(model='Schwab', from=from, to=to, addline=FALSE)
-## adjdates set to 1 month earlier than twrsheet so can use entire range available
-efdata <- ef(model='Schwab', addline=FALSE, 
-             adjdates=c(as.Date('2016-11-30'), 
-                        zoo::index(twrsheet)))
-twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
-check  <- identical(zoo::index(twrib), zoo::index(twrsheet))
-check  # need this to be true
-names(twrib) <- 'Schwab_70_30'
+## pull twri from twrsheet
+twri <- twrsheet[, (colnames(twrsheet) %in% tidyselect::all_of(portfolio))]
+## adjust twri to market days
+twri <- twri.adjust(twri)
 
-## add CPI+5% to benchmark if exists inside twrsheet
+##-----------------------------------------------------------------------------
+## get effective frontier data
+efdata <- ef(model='Schwab', period='days', addline=FALSE)
+## adjust dates to same as defined in twri
+efdata$twri <- twri.adjust(efdata$twri, dates.new = zoo::index(twri))
+
+##-----------------------------------------------------------------------------
+## define benchmarks
+twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
+names(twrib) <- 'Schwab_70_30'
+twrib <- twri.adjust(twrib, dates = zoo::index(twri))
+
+## add CPI+5% as a benchmark if exists inside twrsheet
 if (which(grepl('CPI', names(twrsheet))) > 0) {
     ## twri for CPI (consumer price index) provided for plotting
-    twri.cpi <- twrsheet$CPI
-    twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
-    if (period == 'days') {
-        divisor <- 52*5
-    } else if (period == 'weeks') {
-        divisor <- 52
-    } else if (period == 'months') {
-        divisor <- 12
-    } else if (period == 'years') {
-        divisor <- 1
+    cpi          <- twri.adjust( twrsheet$CPI )
+    twrib        <- cbind(twrib, cpi)
+    p5           <- 0
+    twrib$CPI.p5 <- 0
+    date <- as.numeric( zoo::index(twrib) )
+    for (i in 2:nrow(twrib)) {
+        ## add 5% to CPI
+        elapsed <- date[i] - date[i-1]
+        p5[i]   <- 0.05 / (365.25 / elapsed)
+        twrib$CPI.p5[i] <- twrib$CPI[i] * 0 + p5[i]
+        ## twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
     }
-    ## twri.cpip5 <- twri.cpi + 0.05 / divisor
-    ## twrc.cpip5 <- twrc.calc(twri.cpip5, zero.from=TRUE)
-    twrib$'CPI+5%' <- twri.cpi + 0.05 / divisor
+    ## assume 1st p5 entry is same as the 2nd
+    twrib$CPI.p5[1] <- twrib$CPI[1] + p5[2]
+    ## eliminate the CPI column
+    twrib$CPI <- NULL
+    ## rename 'CPI.p5' to 'CPI+5%'
+    ## the following works but the complex name gets messed up and replaced down the line
+    ## names(twrib) <- stringr::str_replace(names(twrib), 'CPI.p5', 'CPI+5%')
 }
 
 
 ##-----------------------------------------------------------------------------
-## evaluate portfolio against benchmark
+## pull value from valuesheet
+value <- valuesheet[, (colnames(valuesheet) %in% tidyselect::all_of(portfolio))]
+## adjust twri to market days
+value <- twri.adjust(value, twri.input = FALSE)
+
+
+##-----------------------------------------------------------------------------
+## evaluate portfolio
+## look at available date range
+print('Available dates:')
+print(zoo::index(twri))
+
+## define xtsrange
+xtsrange <- '2016-12/2021'  # 5 year
+xtsrange <- '2018-12/2021'  # 3 year
+xtsrange <- '2020-12/2021'  # 1 year
+
+port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
+
+plotspace(2,2)
+portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, twri.ef=efdata$twri,
+               plottype=c('twri', 'twrc', 'rra', 'ab'))
+
+
+
 out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
                         portfolioname)
 perf <- as_tibble( out$out.xtsrange$performance )  # tibble conversion strips the rownames
