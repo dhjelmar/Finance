@@ -26,12 +26,18 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
     ##                  Fixed = AGG
     ##                  Cash  = SHV (iShares Short Treasury Bond, < 1 yr)
 
+    ## to just get twri data for subsequent use
+    ##    twrief <- ef(period='months', addline=FALSE)$twri
+    ## then to create ef line
+    ##    ef(model='Schwab', 
+
+    
     if (is.na(efdata[1])) {
         ## efdata is not provided so need to get it
         symbol <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
         if (isFALSE(addline)) {
             ## do not worry about dates and just get data for subsequent call to ef()
-            out <- equity.twri(symbol)
+            out <- equity.twri(symbol, period=period)
             twri <- na.omit(out)
         } else if (is.null(adjdates)) {
             out  <- equity.history(symbol, from=from, to=to, period=period)
@@ -44,7 +50,13 @@ ef <- function(model='Schwab', from=NA, to=NA, efdata=NA, adjdates=NULL, period=
         
     } else {
         ## efdata is provided so can use it directly
-        twri_in <- efdata$twri
+        if (class(efdata)[1] == 'xts') {
+            ## input efdata is simply an xts object of twri values
+            twri_in <- efdata
+        } else {
+            ## input efdata is full output of prior run of ef()
+            twri_in <- efdata$twri
+        }
         twri <- twri_in
     }
     
