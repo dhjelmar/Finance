@@ -113,31 +113,43 @@ xtsrange <- '2016-12/2021'  # 5 year
 xtsrange <- '2018-12/2021'  # 3 year
 xtsrange <- '2020-12/2021'  # 1 year
 
+
+file <- NULL
+if (!is.null(file)) {
+    ## create PDF of plots
+    pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
+        ## file = "performance%03d.pdf", onefile = FALSE,  # creates multiple PDF files
+        width = 9,  # The width of the plot in inches
+        height = 7) # The height of the plot in inches
+}
+
 port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
 
 plotspace(2,2)
-portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, twri.ef=efdata$twri,
-               plottype=c('twri', 'twrc', 'rra', 'ab'))
+portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+               twri.ef=efdata$twri[xtsrange],
+               plottype=c('twri', 'ab', 'twrc', 'rra'),
+               main=paste('Benchmark = ', names(twrib)[1], sep=''))
 
+## repeat above with SPY as baseline and converting everything to monthly returns
+value.m <- twri.adjust(value, d2m=TRUE, twri.input=FALSE)
+twri.m  <- twri.adjust(twri , d2m=TRUE)
+twrib.m  <- equity.twri('SPY', period='months')
+xtsrange <- range(zoo::index(twri.m[xtsrange]))
+xtsrange <- paste(xtsrange[1], '/', xtsrange[length(xtsrange)], sep='')
+port.m  <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange])
+efdata.m <- ef(model='Schwab', period='months', addline=FALSE)
+portfolio.plot(twri=port.m$twri, twrc=port.m$twrc, perf=port.m$perf, 
+               twri.ef=efdata.m$twri[xtsrange],
+               plottype=c('twri', 'ab', 'twrc', 'rra'),
+               main=paste('Baseline = ', names(twrib.m)[1], sep=''))
 
+## print summary output from calls to portfolio.calc
+portfolio.calc.print(port)
+portfolio.calc.print(port.m)
 
-out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
-                        portfolioname)
-perf <- as_tibble( out$out.xtsrange$performance )  # tibble conversion strips the rownames
-perf
+## evaluate portfolio as if it was a mutual fund
+twri <- port.m$twri$portfolio
+out <- equity.eval(portfolioname, 'SPY', twri=twri, period='months')
 
-df <- perf
-## change twrc, std, twrc.ann, and std.ann to character and apply % sign
-df[2:5]   <- sapply(df[2:5], function(x) scales::percent(x, accuracy=0.01))
-df$alpha   <- round(df$alpha , 3)
-df$beta    <- round(df$beta  , 3)
-df$weight  <- round(df$weight, 2)
-df$value   <- scales::dollar(df$value)
-## print as data frame rather than tibble so right justifies
-df <- as.data.frame(df)
-df
-         
-## same as above but creates pdf file with plot output
-out <- performance.plot(portfolio, valuesheet, twrsheet, twrib, xtsrange, period,
-                        portfolioname, 
-                        file = paste('performance.', portfolioname, '.pdf', sep=''))
+if (!is.null(file)) dev.off() # close external pdf (or jpg) file
