@@ -62,8 +62,6 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
         if (rebalance == 'no') {
             ## let assets grow without rebalancing (i.e., determine new weight after every period)
             ## need to determine weight as a function of time
-            ## first restrict twri to xtsrange
-            twri <- twri[xtsrange]
             ## create empty xts object for value
             ## value.port <- 1
             value      <- xts.create(datevec=zoo::index(twri), value=NA, names=names(twri))
@@ -113,7 +111,7 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     std.ann  <- std * 12^0.5  
 
     ## average annual return
-    days.held <- as.numeric(as.Date(to) - as.Date(from))
+    days.held <- as.numeric( sum( diff(zoo::index(twri)) ) )
     twrc.ann  <- (1 + twrcl)^(365.25 / days.held) - 1
     
     ##-----------------------------------------------------------------------------
@@ -148,11 +146,18 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     
 
     ##-----------------------------------------------------------------------------    
-    ## add weights to perf
-    perf$weight <- c(weight, rep(NA, 1+ncol(twrib)))
+    ## add weights and value to perf
+    perf$weight <- c(weight                         , rep(NA, 1+ncol(twrib)))
+    perf$value  <- c(as.numeric(value[nrow(value),]), rep(NA, 1+ncol(twrib)))
+    
+    ##-----------------------------------------------------------------------------
+    ## return various values including range of twriall
+    xtsrange <- range(zoo::index(twri))
+    xtsrange <- paste(xtsrange[1], '/', xtsrange[2], sep='')
     
     return(list(twri = twriall,
                 twrc = twrc,
+                xtsrange = xtsrange,
                 perf = perf))
 }
 
