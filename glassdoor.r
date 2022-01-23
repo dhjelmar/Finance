@@ -195,6 +195,10 @@ portfolioname <- 'Glassdoor'
 from  <- '2008-12-31'
 to    <- '2021-12-31'
 duration <- paste(from, 'to', to, sep=' ')
+
+##----------------------
+
+## want to replace following
 out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri,
                       twrib='SPY', efdata=efdata,
                       plottype = c('twrc', 'rr', 'twri', 'ab'),
@@ -204,6 +208,25 @@ out <- portfolio.eval(names(holding)[2:(nhold+1)], weight=weight, twri=twri,
 
 ## evaluate portfolio as if it was a mutual fund
 out <- equity.eval(portfolioname, 'SPY', twri=twri$portfolio, period=period)
+
+##----------------------
+
+## replace above the following (not tested yet; then do similar in loop below)
+plotspace(2,2)
+twri   <- twrsheet[, (colnames(twrsheet) %in% tidyselect::all_of(portfolio))]
+twrib  <- equity.twri('SPY', period='months')
+port   <- portfolio.calc(twri[xtsrange], weight=weigh, twrib=twrib[xtsrange])
+efdata <- ef(model='Schwab', period='months', addline=FALSE)
+portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+               twri.ef=efdata$twri[xtsrange],
+               plottype=c('twri', 'ab', 'twrc', 'rra'),
+               main=paste('Benchmark = ', names(twrib)[1], sep=''))
+
+## evaluate portfolio as if it was a mutual fund
+twri <- port$twri$portfolio
+out  <- equity.eval(portfolioname, 'SPY', twri=twri, period='months')
+
+##----------------------
 
 ## plot performance during each year of portfolio
 for (i in 1:nrow(holding)) {
