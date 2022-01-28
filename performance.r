@@ -110,6 +110,7 @@ print(zoo::index(twri))
 
 
 file <- NULL
+file <- 'de.pdf'
 if (!is.null(file)) {
     ## create PDF of plots
     pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
@@ -127,7 +128,7 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
 
     port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
 
-    plotspace(2,1)
+    plotspace(2,2)
     portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
                    twri.ef=efdata$twri[xtsrange],
                    plottype=c('twri', 'twrc'), pch.hold = 16,
@@ -136,8 +137,6 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
                    twri.ef=efdata$twri[xtsrange],
                    plottype=c('ab', 'rra'), pch.hold = 16,
                    main=paste('Benchmark = ', names(twrib)[1], sep=''))
-
-    ## shinyplot(port$perf, 'beta', 'alpha')
 
     ## repeat above with SPY as baseline and converting everything to monthly returns
     value.m <- twri.adjust(value, d2m=TRUE, twri.input=FALSE)
@@ -156,10 +155,15 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
     portfolio.calc.print(port)
     portfolio.calc.print(port.m)
 
-    ## evaluate portfolio as if it was a mutual fund
-    twri <- port.m$twri$portfolio
-    out <- equity.eval(portfolioname, 'SPY', twri=twri, period='months')
-
+    ## interactive plots
+    shinyplot(port.m$perf, 'beta'  , 'alpha')
+    shinyplot(port.m$perf, 'std.ann', 'twrc.ann')
+    
+    
 }
+
+## evaluate portfolio as if it was a mutual fund
+port.twri <- port.m$twri$portfolio
+out <- equity.eval(portfolioname, 'SPY', twri=port.twri, period='months')
 
 if (!is.null(file)) dev.off() # close external pdf (or jpg) file
