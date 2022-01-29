@@ -49,8 +49,14 @@ portfolioname <- 'DE'
 portfolio     <-  church
 portfolioname <- 'Church'
 
+portfolio     <-  p
+portfolioname <- 'p'
+
 period        <- 'months'
-xtsrange      <- '2016-12/2021-12'
+xtsrange1 <- '2020-12/2021'  # 1 year
+xtsrange3 <- '2018-12/2021'  # 3 year
+xtsrange5 <- '2016-12/2021'  # 5 year
+xtsrange  <- xtsrange3
 
 ##-----------------------------------------------------------------------------
 ## pull twri from twrsheet
@@ -110,7 +116,7 @@ print(zoo::index(twri))
 
 
 file <- NULL
-file <- 'de.pdf'
+## file <- 'de.pdf'
 if (!is.null(file)) {
     ## create PDF of plots
     pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
@@ -119,23 +125,16 @@ if (!is.null(file)) {
         height = 10) # The height of the plot in inches
 }
 
-## define xtsranges
-xtsrange1 <- '2020-12/2021'  # 1 year
-xtsrange3 <- '2018-12/2021'  # 3 year
-xtsrange5 <- '2016-12/2021'  # 5 year
-
 for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
 
-    port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
+    ## set 2x2 plot space filling by columns first
+    par(mfcol=c(2,2))
 
-    plotspace(2,2)
+    ## plot portfolio performance with selected benchmark
+    port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
     portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
                    twri.ef=efdata$twri[xtsrange],
-                   plottype=c('twri', 'twrc'), pch.hold = 16,
-                   main=paste('Benchmark = ', names(twrib)[1], sep=''))
-    portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
-                   twri.ef=efdata$twri[xtsrange],
-                   plottype=c('ab', 'rra'), pch.hold = 16,
+                   plottype=c('twri', 'twrc', 'ab', 'rra'), pch.hold = 16,
                    main=paste('Benchmark = ', names(twrib)[1], sep=''))
 
     ## repeat above with SPY as baseline and converting everything to monthly returns
@@ -154,16 +153,19 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
     ## print summary output from calls to portfolio.calc
     portfolio.calc.print(port)
     portfolio.calc.print(port.m)
-
-    ## interactive plots
-    shinyplot(port.m$perf, 'beta'  , 'alpha')
-    shinyplot(port.m$perf, 'std.ann', 'twrc.ann')
-    
     
 }
 
 ## evaluate portfolio as if it was a mutual fund
 port.twri <- port.m$twri$portfolio
-out <- equity.eval(portfolioname, 'SPY', twri=port.twri, period='months')
+out <- equity.eval(portfolioname, bench='SPY', twri=port.twri, period='months')
 
 if (!is.null(file)) dev.off() # close external pdf (or jpg) file
+
+
+## interactive plots
+xtsrange <- xtsrange3
+port.m   <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange])
+efdata.m <- ef(model='Schwab', efdata=efdata.m$twri[xtsrange], annualize=TRUE, addline=FALSE)
+shinyplot(port.m$perf, 'beta'  , 'alpha')
+shinyplot(port.m$perf, 'std.ann', 'twrc.ann', xline=efdata.m$ef$efstd, yline=efdata.m$ef$eftwrc)
