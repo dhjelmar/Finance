@@ -189,7 +189,9 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
             points(perfbench1$beta, perfbench1$alpha, col='blue', pch=2)
             ## add subtitle text
             mtext('(portfolio = open red circle; benchmark = open blue triangle)',
-                  side=3, line=0.75, cex=1)        
+                  side=3, line=0.75, cex=1)   
+            abline(v=1)
+            abline(h=0)
         }
 
 
