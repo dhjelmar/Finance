@@ -53,7 +53,7 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
         ## value over time is not defined, so use initial weight instead
 
         ## assume equal weights if not defined
-        if (is.na(weight)) weight <- rep(1/length(holding), length(holding))
+        if (is.na(weight[1])) weight <- rep(1/length(holding), length(holding))
         
         if (rebalance == 'no') {
             ## let assets grow without rebalancing (i.e., determine new weight after every period)
@@ -144,7 +144,11 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     ##-----------------------------------------------------------------------------    
     ## add weights and value to perf
     perf$weight <- c(weight                         , rep(NA, 1+ncol(twrib)))
-    perf$value  <- c(as.numeric(value[nrow(value),]), rep(NA, 1+ncol(twrib)))
+    if (is.na(value[1])) {
+        perf$value <- NA
+    } else {
+        perf$value  <- c(as.numeric(value[nrow(value),]), rep(NA, 1+ncol(twrib)))
+    }
     
     ##-----------------------------------------------------------------------------
     ## return various values including range of twriall
