@@ -13,29 +13,25 @@ portfolio.calc.test <- function() {
 portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
                            twrib) {
 
+    ## Minimum input
     ## Given:     twri (incremental TWR (time weighted return)) for holdings
     ##            twrib (twri for benchmark)
-    ## calculate: twrc (cumulative TWR)
+
+    ## Output:    twrc (cumulative TWR)
     ##            twrcb (twrc for benchmark)
     ##            sd (standard deviation)
     ##            alpha
     ##            beta
-    
-    ## input: twri      = xts object with twri for each holding over time
-    ##        weight    = vector of weights of each holding in portfolio (sums to 1)
-    ##                  = NA = 1/length(holding) if value is not supplied
-    ##        value     = xts object with value of each holding over time (optional)
-    ##        twrib     = xts object with twri or benchmark over time
-    ##        rebalance = 'no' to let assets grow without rebalancing
-    ##                  = 'period' (default) to rebalance every period to same weight
-    ##                    (note: this is what ef.r currently assumes)
-    ##                  = 'years' to rebalance at end of each year
-    ##        period    = 'months' (default) for each increment in time (overruled if twri provided)
-    ##                  = 'days'
-    ##                  = 'years'
 
-    ## output: twrc     = cumulative TWR
-    ##
+    ## Options: twri      = xts object with twri for each holding over time
+    ##          weight    = vector of weights of each holding in portfolio (sums to 1)
+    ##                    = NA = 1/length(holding) if value is not supplied
+    ##          value     = xts object with value of each holding over time (optional)
+    ##          rebalance = 'no' to let assets grow without rebalancing
+    ##                    = 'period' (default) to rebalance every period to same weight
+    ##                      (note: this is what ef.r currently assumes)
+    ##                    = 'years' to rebalance at end of each year
+    ##          twrib     = xts object with twri or benchmark over time
 
     ## create portfolio twri
     if (class(value)[1] == 'xts') {
