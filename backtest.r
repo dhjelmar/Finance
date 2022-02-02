@@ -76,6 +76,11 @@ account_info[nchar(account_info$Holding) > 8,]$Holding <- 'Cash'
 ## strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Holding', 'Quantity'))
 
+debug.flag <- TRUE
+if (isTRUE(debug.flag)) {
+    account_info_all <- account_info
+    account_info <- head(account_info)
+}
 
 ##-------------------------------------------------------------------------
 ## GET TWR FOR EVERY HOLDING and BENCHMARK
@@ -103,7 +108,7 @@ accountd <- account_info[(account_info$Owner == 'D' |
                           account_info$Owner == 'DE' |
                           account_info$Owner == 'E' ),]
 
-account <- accountd
+account <- accountp
 account_list <- split(account, account$Account_Type)
 account_list <- split(account, account$Account_Name)
 names(account_list)
@@ -145,30 +150,37 @@ for (i in 1:(naccounts+1)) {
     twrib <- twriall$SPY
     from = '2018-12-31'
     to   = '2021-11-30'
+    xtsrange <- paste(from, '/', to, sep='')
     duration <- paste(from, 'to', to, sep=' ')
     ## na <- 'omit'
     ## if (portfolioname == 'IRA' | portfolioname == 'All Combined') na <- 'zero'  # IFED too short duration for evaluation
     na <- 'zero'  # this will force all of the portfolios to be on the same duration
-    out <- portfolio.eval(portfolio$Holding,
-                          portfolio$Weight,
-                          twri  = twri,
-                          twrib = twrib,
-                          from  = from,
-                          to    = to,
-                          na    = na,
-                          plottype = c('twrc', 'rr', 'ab', 'twri'),
-                          main = paste(portfolioname, '; duration =', duration, sep=' '))
 
-    ## collect results
-    performance <- out$performance
-    ## add "portfolio" and "benchmark" as holdings to the portfolio dataframe
-    portrows <- nrow(portfolio)
-    portfolio[portrows+1,]$Holding <- 'portfolio'
-    portfolio[portrows+1,]$Market_Value <- sum(portfolio$Market_Value, na.rm = TRUE)
-    portfolio[portrows+2,]$Holding <- 'benchmark'
-    value       <- select(portfolio, Holding, Market_Value)
-    performance <- merge(performance, value, by='Holding')
-    portfolio_twri[i] <- list(out$twri)
+    ## replace portfolio.eval with portfolio.calc and portfolio.plot
+    ## out <- portfolio.eval(portfolio$Holding,
+    ##                       portfolio$Weight,
+    ##                       twri  = twri,
+    ##                       twrib = twrib,
+    ##                       from  = from,
+    ##                       to    = to,
+    ##                       na    = na,
+    ##                       plottype = c('twrc', 'rr', 'ab', 'twri'),
+    ##                       main = paste(portfolioname, '; duration =', duration, sep=' '))
+
+    port <- portfolio.calc(twri[xtsrange], weight=portfolio$Weight, twrib=twrib[xtsrange])
+    portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                   twri.ef=efdata$twri[xtsrange],
+                   plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                   main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    
+    ## add value to output
+    port$perf$value <- c(portfolio$Market_Value,
+                         sum(portfolio$Market_Value, na.rm = TRUE),
+                         rep(NA, ncol(twrib)))
+    performance <- port$perf
+
+    ## collect twri in a list
+    portfolio_twri[i] <- list(port$twri)
     ## performance[order(performance$twrcum),]
     performance$portfolioname <- portfolioname
     performance$duration      <- duration
