@@ -143,7 +143,7 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
 
     ##-----------------------------------------------------------------------------    
     ## add weights and value to perf
-    perf$weight <- c(weight                         , rep(NA, 1+ncol(twrib)))
+    perf$weight <- c(weight, 1, rep(NA, ncol(twrib)))
     if (is.na(value[1])) {
         perf$value <- NA
     } else {
