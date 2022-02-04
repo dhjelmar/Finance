@@ -76,10 +76,10 @@ account_info[nchar(account_info$Holding) > 8,]$Holding <- 'Cash'
 ## strip to only what is needed to identify unique accounts
 account_info <- select(account_info, c('Account_Name', 'Owner', 'Account_Type', 'Holding', 'Quantity'))
 
-debug.flag <- TRUE
+debug.flag <- FALSE
 if (isTRUE(debug.flag)) {
     account_info_all <- account_info
-    account_info <- head(account_info)
+    account_info <- account_info_all[136:145,]
 }
 
 ##-------------------------------------------------------------------------
@@ -90,7 +90,7 @@ period     <- 'months'
 
 ## holdings
 holdingall <- unique(account_info$Holding)
-twriall    <- equity.twri(holdingall, period='month')
+twriall    <- equity.twri(holdingall, period='month') # this works as long as 1st holding is not "Cash"
 
 ## benchmark options
 efdata   <- ef('Schwab',        from='1900-01-01', to=Sys.Date(), addline=FALSE)
@@ -108,7 +108,8 @@ accountd <- account_info[(account_info$Owner == 'D' |
                           account_info$Owner == 'DE' |
                           account_info$Owner == 'E' ),]
 
-account <- accountp
+account <- accountd
+if (isTRUE(debug.flag)) account <- account_info
 account_list <- split(account, account$Account_Type)
 account_list <- split(account, account$Account_Name)
 names(account_list)
@@ -117,6 +118,7 @@ naccounts <- length(names(account_list))
 perf_all <- NA
 mv       <- NA
 portfolio_twri <- NA
+plotspace(2,2)
 for (i in 1:(naccounts+1)) {
 
     if (i == naccounts + 1) {
@@ -147,7 +149,7 @@ for (i in 1:(naccounts+1)) {
     ## EVALUATE PORTFOLIO
     eftwri$schwab_70_30 = (eftwri$schwab_60_40 + eftwri$schwab_80_20)/2
     twrib <- eftwri$schwab_70_30
-    twrib <- twriall$SPY
+    twrib <- eftwri$SPY
     from = '2018-12-31'
     to   = '2021-11-30'
     xtsrange <- paste(from, '/', to, sep='')
@@ -196,19 +198,16 @@ names(portfolio_twri) <- c(names(account_list), 'All Combined')
 ## look at correlation betweeen each investment in an account
 ## pairsdf(as.data.frame(portfolio_twri$Roth))
 
-# create dataframe of ony portfolio accounts and benchmark for summary info
-pp <- select(perf_all, c('portfolioname', 'duration',
-                         'Holding', 'twrcum', 'std', 'alpha', 'beta', 'P/E Ratio',
-                         'Market_Value'))
 ## pull out and combine portfolio totals and benchmark stats
-pp_type  <- pp[pp$Holding == 'portfolio',]
-pp_bench <- pp[pp$Holding == 'benchmark',][1,]
-pp_bench$portfolioname <- 'benchmark'
+pp <- perf_all
+pp_type  <- pp[pp$holding == 'portfolio',]
+pp_bench <- pp[nrow(pp),][1,]
+pp_bench$portfolioname <- pp_bench$holding
 perf_summary <- rbind(pp_type, pp_bench)
-perf_summary$Holding <- NULL
+perf_summary$holding <- NULL
 ## perf_summary$Market_Value <- c(mv, NA)   # NA is for the benchmark
-totalvalue <- sum(perf_summary$Market_Value, na.rm=TRUE) / 2  # divide by 2 because "all combined" is in list
-perf_summary$Weight       <- perf_summary$Market_Value / totalvalue
+totalvalue <- sum(perf_summary$value, na.rm=TRUE) / 2  # divide by 2 because "all combined" is in list
+perf_summary$weight       <- perf_summary$value / totalvalue
 rownames(perf_summary) <- 1:nrow(perf_summary)
 perf_summary <- as_tibble(perf_summary)
 printdf(perf_summary, 999)
@@ -216,33 +215,34 @@ printdf(perf_summary, 999)
 ## create plots
 plotspace(2,1)
 ## risk/return plot for all accounts in portfolio
-with(perf_summary, plotfit(std, twrcum, portfolioname,
+with(perf_summary, plotfit(std, twrc, portfolioname,
                            xlab = 'Standard Deviation',
                            ylab = 'Cumulative TWR', 
                            bg   = 'grey80',
                            interval = 'noline',
                            suppress = 'yes',
                            xlimspec = range(std   , out$efdata$std),
-                           ylimspec = range(twrcum, out$efdata$twrcum)))
+                           ylimspec = range(twrc, out$efdata$twrc)))
 ## add efficient fontier lines
-efdata.Schwab <- ef(model='Schwab', efdata=efdata, from=from, to=to, addline=TRUE, col='black', lty=1, pch=3)
-efdata.simple <- ef(model='simple', efdata=efdata, from=from, to=to, addline=TRUE, col='black', lty=2, pch=3)
+efdata.Schwab <- ef(model='Schwab', efdata=efdata, from=from, to=to, annualize=FALSE, addline=TRUE, col='black', lty=1, pch=3)
+efdata.simple <- ef(model='simple', efdata=efdata, from=from, to=to, annualize=FALSE, addline=TRUE, col='black', lty=2, pch=3)
 ## alpha/beta plot for all accounts in portfolio
 with(perf_summary, plotfit(beta, alpha, portfolioname,
                            bg   = 'grey80',
                            interval = 'noline',
                            suppress = 'yes'))
+abline(v=1)
+abline(h=0)
 
-shinyplot(as.data.frame(perf_summary), 'std', 'twrcum')
+shinyplot(as.data.frame(perf_summary), 'std', 'twrc')
 shinyplot(as.data.frame(perf_summary), 'beta', 'alpha')
 
 ## select portfolio for shiny plot
 ## account_list <- split(account, account$Account_Type)
 portfolio_list <- split(perf_all, perf_all$portfolioname)
 names(portfolio_list)
-portfolio <- as_tibble(portfolio_list$IRA)
-printdf(portfolio, 999, c('portfolioname', 'Holding', 'twrcum', 'std', 
-                          'alpha', 'beta', 'P/E Ratio', 'weight'))
+portfolio <- as_tibble(portfolio_list$'D Roth')
+printdf(portfolio, 999)
 
 ## Schwab Invest      = 80/20
 ##        IRA w/o FAM = 60/40
@@ -256,14 +256,13 @@ printdf(portfolio, 999, c('portfolioname', 'Holding', 'twrcum', 'std',
 ## }
 portfolio <- perf_all[perf_all$portfolioname == 'D Roth',]
 efline <- efdata.Schwab$ef
-shinyplot(as.data.frame(portfolio), 'std', 'twrcum', xline = efline$efstd, yline=efline$eftwrcum)
+shinyplot(as.data.frame(portfolio), 'std', 'twrc', xline = efline$efstd, yline=efline$eftwrc)
 shinyplot(as.data.frame(portfolio), 'beta', 'alpha')
 
 ## biggest holdings
-df <- select(perf_all[perf_all$Holding != 'portfolio',], 
-             portfolioname, Holding, weight, Market_Value, twrcum, std, alpha, beta, 'P/E Ratio')
-head( df[order(df$Market_Value, decreasing = TRUE),], 20 )
-shinyplot(perf_all[perf_all$Holding != 'portfolio',], 'Market_Value', 'twrcum')
+df <- perf_all[perf_all$holding != 'portfolio',]
+head( df[order(df$value, decreasing = TRUE),], 20 )
+shinyplot(perf_all[perf_all$holding != 'portfolio',], 'value', 'twrc')
 
 ##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING
