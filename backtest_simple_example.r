@@ -54,29 +54,26 @@ bench <- 'SPY'
 ##-----------------------------------------------------------------------------
 ## define a timeframe and period for incremental TWR
 period   <- 'months'
-from     <- '2018-12-31'
-to       <- '2021-11-30'
-xtsrange <- paste(from, '/', to, sep='')
-duration <- paste(from, 'to', to, sep=' ')
+xtsrange <- '2018-12-31/2021-11-30'
 
-## ## evaluate portfolio
-## out <- portfolio.eval(holding, weight=weight, twrib=bench,
-##                       plottype = c('twrc', 'rr', 'twri', 'ab'),
-##                       from=from, to=to, period=period,
-##                       main = paste(portfolioname, '; duration =', duration, sep=' '))
-
+##-----------------------------------------------------------------------------
 ## get twri for holdings, benchmark, and efficient frontier
 twri  <- equity.twri(holding, refresh=TRUE, file=NA, period=period)
 twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
 twri.ef <- ef(addline=FALSE)$twri
 
 ## calculate and plot performance
-port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
-plotspace(2,2)
-out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
-               twri.ef=twri.ef[xtsrange],
-               plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
-               main=paste('Benchmark = ', names(twrib)[1], sep=''))
+backtest <- function(twri, weight, twrib, twri.ef, xtsrange) {
+    port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
+    plotspace(2,2)
+    out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                          twri.ef=twri.ef[xtsrange],
+                          plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                          main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
+}
+out <- backtest(twri, weight, twrib, twri.ef, xtsrange)
+port <- out$port
 
 ## efficient frontier line is set based on last call to risk/reward plot in portfolio.plot ('rr' or 'rra')
 ## need to make sure requested shiny x,y are consistent with efficient frontier
