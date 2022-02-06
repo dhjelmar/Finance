@@ -1,0 +1,89 @@
+backtest <- function(holding, weight, bench, xtsrange, period='days',
+                     twri, twrib, twri.ef) {
+
+    ## simple input:
+    ##     holding = vector of holdings        (e.g., c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'))
+    ##               if not provided, assume holding = names(twri)
+    ##     weight  = vector of holding weights (e.g., c( 0.4,   0.2,   0.1,   0.3,   0.1))
+    ##     bench   = benchmark                 (e.g., 'SPY')
+    ##               if not provided, assume bench = names(twrib)[1]
+    ##     period  = 'days' (default), 'weeks', 'months', 'years'
+    ##     xtsrange = requested date range to evaluate twri over (e.g., '2020-12-31/2021')
+
+    ## alternate input options:
+    ##     twri    = xts object with twri for holdings
+    ##               if holding is also provided, will pull twri for holdings from twri
+    ##               if not provided, will be obtained
+    ##     twrib   = xts object with twri for benchmark 
+    ##               if bench is also provided, will pull twri for bench from twrib
+    ##               if not provided, will be obtained
+    ##     twri.ef = xts object with twri for effective frontier symbols
+    ##               if not provided, will be obtained
+    
+    ## if not input, get twri for holdings, benchmark, and efficient frontier
+    if (missing(holding)) holding <- names(twri)
+    if (missing(twri))    twri  <- equity.twri(holding, refresh=TRUE, file=NA, period=period)
+    if (missing(twrib))   twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
+    if (missing(twri.ef)) twri.ef <- ef(period=period, addline=FALSE)$twri
+
+    ## check twri dates within xtsrange and covert everything to that if they do not match
+    twri <- twri[xtsrange]
+    dates <- zoo::index(twri)
+    twrib   <- twri.adjust(twrib  , d2m=FALSE, dates.new=dates, twri.input=TRUE)
+    twri.ef <- twri.adjust(twri.ef, d2m=FALSE, dates.new=dates, twri.input=TRUE)
+
+    ## check for NA in twri, twrib, and twri.ef
+    twri_all <- cbind(twri, twrib, twri.ef)
+    twri_all <- na.omit(twri_all)
+    dates.all <- zoo::index(twri_all)
+    mismatch <- grep('FALSE', dates == dates.all)
+    if (length(mismatch) > 1) {
+        cat('\nFatal error: Select new date range. Some holdings have twri=NA.\n')
+        return(twri_all)
+    }
+    
+    ## calculate portfolio performance
+    port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
+
+    ## plot portfolio performance
+    plotspace(2,2)
+    duration <- as.numeric(diff.Date(range(dates)))
+    if (duration > 365.25) {
+        ## print annualized risk/return plot
+        out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                              twri.ef=twri.ef[xtsrange],
+                              plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                              main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    } else {
+        ## print non-annualized risk/return plot
+        out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                              twri.ef=twri.ef[xtsrange],
+                              plottype=c('twri', 'ab', 'twrc', 'rr'), pch.hold = 16,
+                              main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    }        
+    
+    ## evaluate portfolio as if it were a mutural fund
+    out.eq <- equity.eval(twri = port$twri$portfolio, twrib = twrib, period=period)
+    ##                    bench='schwab_80_20', twrib = out$efdata.Schwab$eftwri$schwab_80_20)
+    
+    return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
+    
+}
+## xtsrange1 <- '2020-12-31/2021-12'
+## xtsrange3 <- '2018-12-31/2021-12'
+## xtsrange5 <- '2016-12-31/2021-12'
+
+## ## holding <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
+## holding <- c('SWPPX', 'PONAX')
+## weight  <- c( 0.6,   0.4)
+## bench   <- 'SPY'
+## period  <- 'days'
+## xtsrange <- xtsrange5
+## out <- backtest(holding=holding, weight=weight, bench=bench, 
+##                 period=period, xtsrange=xtsrange)
+
+## ## following not working right for some reason
+## twri  <- equity.twri(holding, refresh=TRUE, file=NA, period=period)
+## twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
+## twri.ef <- ef(period=period, addline=FALSE)$twri
+## out <- backtest(twri=twri, weight=weight, twrib=twrib, twri.ef=twri.ef, xtsrange)
