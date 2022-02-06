@@ -54,13 +54,15 @@ bench <- 'SPY'
 ##-----------------------------------------------------------------------------
 ## define a timeframe and period for incremental TWR
 period   <- 'months'
-xtsrange <- '2018-12-31/2021-11-30'
+xtsrange1 <- '2020-12-31/2021-12'
+xtsrange3 <- '2018-12-31/2021-12'
+xtsrange5 <- '2016-12-31/2021-12'
 
 ##-----------------------------------------------------------------------------
 ## get twri for holdings, benchmark, and efficient frontier
 twri  <- equity.twri(holding, refresh=TRUE, file=NA, period=period)
 twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
-twri.ef <- ef(addline=FALSE)$twri
+twri.ef <- ef(period=period, addline=FALSE)$twri
 
 ## calculate and plot performance
 backtest <- function(twri, weight, twrib, twri.ef, xtsrange) {
@@ -81,8 +83,8 @@ port <- out$port
 ##     need to make sure plot std     and twrc     if portfolio.plot used 'rr'
 ##     need to make sure plot std.ann and twrc.ann if portfolio.plot used 'rra'
 out.ef <- out$efdata.simple$ef
-shinyplot(as.data.frame(out$perf), 'std.ann' , 'twrc.ann', xline=out.ef$efstd, yline=out.ef$eftwrc)
-shinyplot(as.data.frame(out$perf), 'beta', 'alpha')
+shinyplot(as.data.frame(out$port$perf), 'std.ann' , 'twrc.ann', xline=out.ef$efstd, yline=out.ef$eftwrc)
+shinyplot(as.data.frame(out$port$perf), 'beta', 'alpha')
 
 ## look at correlation between investments
 pairsdf(as.data.frame(port$twri))
