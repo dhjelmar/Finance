@@ -147,7 +147,7 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
     efdata.m <- ef(model='Schwab', period='months', addline=FALSE)
     portfolio.plot(twri=port.m$twri, twrc=port.m$twrc, perf=port.m$perf, 
                    twri.ef=efdata.m$twri[xtsrange],
-                   plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                   plottype=c('twri', 'twrc', 'ab', 'rra'), pch.hold = 16,
                    main=paste('Baseline = ', names(twrib.m)[1], sep=''))
 
     ## print summary output from calls to portfolio.calc
