@@ -10,13 +10,17 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
     ##                      incremental twr for symbol vs. benchmark,
     ##                      cumulative twr vs. standard deviation for symbol and benchmark
 
-    ## options: from and to are used to define the maximum date range
+    ## options: symbol and bench names are taken (and overwritten) from twri and twrib if provided
+    ##          from and to are used to define the maximum date range
     ##          duration = c('1 year', '3 years', '5 years') default makes plots for all 3
     ##                     can specify 1, 2 or all 3 of these as options
     ##                   = number instead returns the last this number of time steps
     ##                     Use this option with from/to to set a specific date range, e.g.:
     ##                         from='2020-10-28', to='2020-12-31', period='days', duration=99999 
 
+    ## extract names of symbol and bench from twri and twrib if they were not input
+    if (missing(symbol)) symbol <- names(twri)
+    if (missing(bench))  bench  <- names(twrib)
 
     ## test that there is only one symbol or twri column
     ##                and only one bench or twrib column
@@ -28,13 +32,14 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         cat(  '       through "symbol", "bench", "twri", or "twrib./n')
         return()
     }
-        
+    
     ## get history
     if (is.null(twri)) {
         ## twri not passed in so obtain
         out  <- equity.history(symbol, period=period, from=from, to=to)
         twri <- out$twri
-    }  
+    }
+    
     if (is.null(twrib)) {
         ## twrib not passed in so obtain (no need to worry about dates since will line up later)
         twrib <- equity.history(bench, period=period)$twri

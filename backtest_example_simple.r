@@ -45,46 +45,63 @@ Bond_global MWFSX      5
 '
 port_in  <- readall(portfolio)
 holding  <- as.character( port_in$holding )
-weight   <- holdings$weight / 100
+weight   <- port_in$weight / 100
 
 
 ## define a benchmark to use in the evaluation
-twrib   <- 'SPY'
+bench <- 'SPY'
 
 ##-----------------------------------------------------------------------------
 ## define a timeframe and period for incremental TWR
 period   <- 'months'
-from     <- '2018-12-31'
-to       <- '2021-11-30'
-duration <- paste(from, 'to', to, sep=' ')
+xtsrange1 <- '2020-12-31/2021-12'
+xtsrange3 <- '2018-12-31/2021-12'
+xtsrange5 <- '2016-12-31/2021-12'
 
-## evaluate portfolio
-out <- portfolio.eval(holding, weight=weight, twrib=twrib,
-                      plottype = c('twrc', 'rr', 'twri', 'ab'),
-                      from=from, to=to, period=period,
-                      main = paste(portfolioname, '; duration =', duration, sep=' '))
+##-----------------------------------------------------------------------------
+## get twri for holdings, benchmark, and efficient frontier
+twri  <- equity.twri(holding, refresh=TRUE, file=NA, period=period)
+twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
+twri.ef <- ef(period=period, addline=FALSE)$twri
 
-efdata <- out$efdata.Schwab$ef
-## ef <- out$efdata.simple$ef
-shinyplot(as.data.frame(out$performance), 'std', 'twrcum', xline=efdata$efstd, yline=efdata$eftwrcum)
-shinyplot(as.data.frame(out$performance), 'beta', 'alpha')
+## calculate and plot performance
+backtest <- function(twri, weight, twrib, twri.ef, xtsrange) {
+    port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
+    plotspace(2,2)
+    out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                          twri.ef=twri.ef[xtsrange],
+                          plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                          main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
+}
+out <- backtest(twri, weight, twrib, twri.ef, xtsrange)
+port <- out$port
+
+## efficient frontier line is set based on last call to risk/reward plot in portfolio.plot ('rr' or 'rra')
+## need to make sure requested shiny x,y are consistent with efficient frontier
+## so efficient fontier line is right on shinyplot:
+##     need to make sure plot std     and twrc     if portfolio.plot used 'rr'
+##     need to make sure plot std.ann and twrc.ann if portfolio.plot used 'rra'
+out.ef <- out$efdata.simple$ef
+shinyplot(as.data.frame(out$port$perf), 'std.ann' , 'twrc.ann', xline=out.ef$efstd, yline=out.ef$eftwrc)
+shinyplot(as.data.frame(out$port$perf), 'beta', 'alpha')
 
 ## look at correlation between investments
-pairsdf(as.data.frame(out$twri))
+pairsdf(as.data.frame(port$twri))
 
 ##-----------------------------------------------------------------------------
 ## how about this last year?
 ## Note: making use of prior xts object for twri
 ##       this avoids again looking up the holding performance
 ##       it only works here because the duration is the same or shorter than what is twri
-from     <- '2020-10-31'
-to       <- '2021-11-30'
-duration <- paste(from, 'to', to, sep=' ')
-out <- portfolio.eval(holding, weight=weight, twri=out$twri, twrib=twrib,
-                      plottype = c('twrc', 'rr', 'twri', 'ab'),
-                      from=from, to=to, period=period,
-                      main = paste(portfolioname, '; duration =', duration, sep=' '))
-pairsdf(as.data.frame(out$twri))
+xtsrange <- '2020-10-31/2021-11-30'
+port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
+plotspace(2,2)
+out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                      twri.ef=twri.ef[xtsrange],
+                      plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
+                      main=paste('Benchmark = ', names(twrib)[1], sep=''))
+pairsdf(as.data.frame(port$twri))
 
 ##-----------------------------------------------------------------------------
 ## DEEP DIVE INTO SPECIFIC HOLDING

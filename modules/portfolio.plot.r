@@ -29,6 +29,10 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
     nhold  <- port.col - 1
     nbench <- ncol(twri) - port.col
 
+    ## initialize output parameters
+    efdata.Schwab = NA
+    efdata.simple = NA
+        
     for (requested in plottype) {
         
         ##-----------------------------------------------------------------------------
@@ -204,4 +208,8 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
         }
     }
 
+    return(list(perf  = perf,
+                efdata.Schwab = efdata.Schwab,
+                efdata.simple = efdata.simple))
+    
 }

@@ -56,7 +56,7 @@ period        <- 'months'
 xtsrange1 <- '2020-12/2021'  # 1 year
 xtsrange3 <- '2018-12/2021'  # 3 year
 xtsrange5 <- '2016-12/2021'  # 5 year
-xtsrange  <- xtsrange3
+xtsrange  <- xtsrange1
 
 ##-----------------------------------------------------------------------------
 ## pull twri from twrsheet
@@ -157,14 +157,15 @@ for (xtsrange in c(xtsrange1, xtsrange3, xtsrange5)) {
 }
 
 ## evaluate portfolio as if it was a mutual fund
-port.twri <- port.m$twri$portfolio
+port.m.all  <- portfolio.calc(twri.m, value=value.m, twrib=twrib.m)
+port.twri <- port.m.all$twri$portfolio
 out <- equity.eval(portfolioname, bench='SPY', twri=port.twri, period='months')
 
 if (!is.null(file)) dev.off() # close external pdf (or jpg) file
 
 
 ## interactive plots
-xtsrange <- xtsrange3
+xtsrange <- '2018-12-31/2021-11-30'
 port.m   <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange])
 efdata.m <- ef(model='Schwab', efdata=efdata.m$twri[xtsrange], annualize=TRUE, addline=FALSE)
 shinyplot(port.m$perf, 'beta'  , 'alpha')
