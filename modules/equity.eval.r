@@ -1,5 +1,5 @@
 equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
-                       duration = c('1 year', '3 years', '5 years'),
+                       duration = c('12 months', '36 months', '60 months'),
                        makeplots = TRUE,
                        twri = NULL, twrib = NULL) {
 
@@ -12,8 +12,9 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
 
     ## options: symbol and bench names are taken (and overwritten) from twri and twrib if provided
     ##          from and to are used to define the maximum date range
-    ##          duration = c('1 year', '3 years', '5 years') default makes plots for all 3
-    ##                     can specify 1, 2 or all 3 of these as options
+    ##          duration = c('12 months', '36 months', '60 months') default makes plots for last 1, 3, and 5 yrs
+    ##                   = c('1 year', '3 years', '5 years') makes plots for current year, last 3, and last 5
+    ##                     Note: can specify any number of duration options
     ##                   = number instead returns the last this number of time steps
     ##                     Use this option with from/to to set a specific date range, e.g.:
     ##                         from='2020-10-28', to='2020-12-31', period='days', duration=99999 
@@ -93,14 +94,14 @@ equity.eval <- function(symbol, bench, period='months', from=NULL, to=NULL,
         ## plot incremental and cumulative returns for input duration
         xtscum <- cumprod(bothx+1)-1
         if (isTRUE(makeplots)) {
-            print( plotxts(bothx, main="Incremental TWR" ) )    # oddly "print" is needed in a loop
-            print( plotxts(xtscum, main="Cumulative TWR") )
+            print( plotxts(bothx, main="Inc" ) )    # oddly "print" is needed in a loop
+            print( plotxts(xtscum, main="Cum") )
             
             ## add cumulative TWR to plot
             mtext(paste('TWR Cum = ', signif(twrcum[i],4)*100, '%;',
                         'Benchmark Cum = ', signif(twrcumb[i], 4)*100, '%',
                         sep=''), 
-                  side=3, line=1, cex=0.75)
+                  side=3, line=0.75, cex=0.75)
         }
 
         ## determine alpha and beta for symbol i and create plot
