@@ -33,6 +33,8 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     ##                    = 'years' to rebalance at end of each year
     ##          twrib     = xts object with twri or benchmark over time
 
+    holding <- names(twri)
+    
     ## create portfolio twri
     if (class(value)[1] == 'xts') {
         ## check that twri and value have the same dates
