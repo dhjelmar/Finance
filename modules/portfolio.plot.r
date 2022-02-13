@@ -40,7 +40,7 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
         if (requested == 'twri') {
             ## plot( plotxts(twri, main=main) )
             xts <- twri
-            pp <- xts::plot.xts(xts[, 1:nhold], ylab='Incremental TWR', main=main,
+            pp <- xts::plot.xts(xts[, 1:nhold], ylab='Incremental TWR', main="",
                                 col=c(1:nhold),
                                 ylim=range(xts, na.rm = TRUE))
             pp <- xts::addSeries(xts$portfolio,
@@ -60,7 +60,7 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
         if (requested == 'twrc') {
             ## plot( plotxts(twrc, main=main) )
             xts <- twrc
-            pp <- xts::plot.xts(xts[, 1:nhold], ylab='Cumulative TWR', main=main,
+            pp <- xts::plot.xts(xts[, 1:nhold], ylab='Cumulative TWR', main="",
                                 col=c(1:nhold),
                                 ylim=range(xts, na.rm=TRUE))
             pp <- xts::addSeries(xts$portfolio,
