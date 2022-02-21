@@ -97,7 +97,12 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     ## 1st date should have twrc = 0
     twrc  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
     twrcl <- t( xts::last(twrc) )
-    std   <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
+    if (nrow(twriall) > 2) {
+        std   <- as.matrix( apply(twriall[2:nrow(twriall),], 2, sd, na.rm=TRUE) )
+    } else {
+        ## too few rows for sd()
+        std   <- NA
+    }
 
     ## calculate risk from standard deviation
     ##    std(xi) = sqrt ( sum(xi-xbar)^2 / N ) for population which seems to be what finance world uses
@@ -149,7 +154,9 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     if (is.na(value[1])) {
         perf$value <- NA
     } else {
-        perf$value  <- c(as.numeric(value[nrow(value),]), rep(NA, 1+ncol(twrib)))
+        perf$value  <- c(as.numeric(value[nrow(value),]), 
+                         sum(value[nrow(value),]), 
+                         rep(NA, ncol(twrib)))
     }
     
     ##-----------------------------------------------------------------------------
