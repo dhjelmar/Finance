@@ -98,77 +98,89 @@ portfolio.plot <- function(twri=NA, twrc=NA, perf=NA, twri.ef=NA,
         
         ##-----------------------------------------------------------------------------
         ## plot risk/reward
-        
+
         if (requested == 'rr') {
             ## risk   = standard deviation
             ## reward = twrc
-            
-            ## determine range making room for legend
-            efdata.schwab <- ef(model='Schwab', efdata=twri.ef, annualize=FALSE, addline=FALSE)
-            efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=FALSE, addline=FALSE)
-            xrange <- range(perf$std, efdata.schwab$ef$efstd, efdata.simple$ef$efstd)
-            xlim   <- c(min(xrange, na.rm = TRUE),
-                        max(xrange, na.rm = TRUE) + 
+
+            if (nrow(twri) > 2) {
+                ## need at least 3 rows for sd() (1st row is not used)
+                
+                ## determine range making room for legend
+                efdata.schwab <- ef(model='Schwab', efdata=twri.ef, annualize=FALSE, addline=FALSE)
+                efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=FALSE, addline=FALSE)
+                xrange <- range(perf$std, efdata.schwab$ef$efstd, efdata.simple$ef$efstd)
+                xlim   <- c(min(xrange, na.rm = TRUE),
+                            max(xrange, na.rm = TRUE) + 
                             0.25*(max(xrange, na.rm = TRUE) - min(xrange, na.rm = TRUE)))
-            ylim   <- range(perf$twrc, efdata.schwab$ef$eftwrc, efdata.simple$ef$eftwrc,
-                            na.rm = TRUE)
+                ylim   <- range(perf$twrc, efdata.schwab$ef$eftwrc, efdata.simple$ef$eftwrc,
+                                na.rm = TRUE)
 
-            ## plot holdings
-            with(perfhold, plotfit(std, twrc, label, interval='noline',
-                                   xlimspec=xlim, ylimspec=ylim, pch=pch.hold,
-                                   xlabel = 'Standard Deviation',
-                                   ylabel = 'Cumulative TWR',
-                                   main   = main))
-            ## add portfolio
-            points(perfport$std, perfport$twrc, col='red', pch=1)
-            ## add benchmark (only the 1st)
-            points(perfbench1$std, perfbench1$twrc, col='blue', pch=2)
-            ## add efficient frontier line
-            efdata.Schwab <- ef(model='Schwab', efdata=twri.ef, annualize=FALSE,
-                                addline=TRUE, col='black', lty=1, pch=3)
-            efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=FALSE,
-                                addline=TRUE, col='black', lty=2, pch=4)
-            mtext('(portfolio = open red circle; benchmark = open blue triangle)',
-                  side=3, line=0.8, cex=1)
-            mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
-                  side=3, line=0, cex=1)
-
+                ## plot holdings
+                with(perfhold, plotfit(std, twrc, label, interval='noline',
+                                       xlimspec=xlim, ylimspec=ylim, pch=pch.hold,
+                                       xlabel = 'Standard Deviation',
+                                       ylabel = 'Cumulative TWR',
+                                       main   = main))
+                ## add portfolio
+                points(perfport$std, perfport$twrc, col='red', pch=1)
+                ## add benchmark (only the 1st)
+                points(perfbench1$std, perfbench1$twrc, col='blue', pch=2)
+                ## add efficient frontier line
+                efdata.Schwab <- ef(model='Schwab', efdata=twri.ef, annualize=FALSE,
+                                    addline=TRUE, col='black', lty=1, pch=3)
+                efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=FALSE,
+                                    addline=TRUE, col='black', lty=2, pch=4)
+                mtext('(portfolio = open red circle; benchmark = open blue triangle)',
+                      side=3, line=0.8, cex=1)
+                mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
+                      side=3, line=0, cex=1)
+            } else {
+                cat('WARNING: Insufficient number of rows in twri for requested rr plot.\n')
+            }
+                
         }
         
         if (requested == 'rra') {
             ## risk   = standard deviation * sqrt(12)
             ## reward = annualized twrc
 
-            ## determine range making room for legend
-            ## first run ef() to get range of effective frontier plots
-            efdata.schwab <- ef(model='Schwab', efdata=twri.ef, annualize=TRUE, addline=FALSE)
-            efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=TRUE, addline=FALSE)
-            xrange <- range(perf$std.ann, efdata.schwab$ef$efstd, efdata.simple$ef$efstd)
-            xlim   <- c(min(xrange, na.rm = TRUE),
-                        max(xrange, na.rm = TRUE) + 
+            if (nrow(twri) > 2) {
+                ## need at least 3 rows for sd() (1st row is not used)
+                
+                ## determine range making room for legend
+                ## first run ef() to get range of effective frontier plots
+                efdata.schwab <- ef(model='Schwab', efdata=twri.ef, annualize=TRUE, addline=FALSE)
+                efdata.simple <- ef(model='simple', efdata=twri.ef, annualize=TRUE, addline=FALSE)
+                xrange <- range(perf$std.ann, efdata.schwab$ef$efstd, efdata.simple$ef$efstd)
+                xlim   <- c(min(xrange, na.rm = TRUE),
+                            max(xrange, na.rm = TRUE) + 
                             0.25*(max(xrange, na.rm = TRUE) - min(xrange, na.rm = TRUE)))
-            ylim   <- range(perf$twrc.ann, efdata.schwab$ef$eftwrc, efdata.simple$ef$eftwrc,
-                            na.rm = TRUE)
+                ylim   <- range(perf$twrc.ann, efdata.schwab$ef$eftwrc, efdata.simple$ef$eftwrc,
+                                na.rm = TRUE)
 
-            ## plot holdings
-            with(perfhold, plotfit(std.ann, twrc.ann, label, interval='noline',
-                                   xlimspec=xlim, ylimspec=ylim, pch=pch.hold,
-                                   xlabel = 'Standard Deviation * sqrt(12)',
-                                   ylabel = 'Annualized Cumulative TWR',
-                                   main   = main))
-            ## add portfolio
-            points(perfport$std.ann, perfport$twrc.ann, col='red', pch=1)
-            ## add benchmark
-            points(perfbench1$std.ann, perfbench1$twrc.ann, col='blue', pch=2)
-            ## add efficient frontier line
-            efdata.Schwab <- ef(model='Schwab', efdata=twri.ef,
-                                annualize=TRUE, addline=TRUE, col='black', lty=1, pch=3)
-            efdata.simple <- ef(model='simple', efdata=twri.ef,
-                                annualize=TRUE, addline=TRUE, col='black', lty=2, pch=4)
-            mtext('(portfolio = open red circle; benchmark = open blue triangle)',
-                  side=3, line=0.8, cex=1)
-            mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
-                  side=3, line=0, cex=1)
+                ## plot holdings
+                with(perfhold, plotfit(std.ann, twrc.ann, label, interval='noline',
+                                       xlimspec=xlim, ylimspec=ylim, pch=pch.hold,
+                                       xlabel = 'Standard Deviation * sqrt(12)',
+                                       ylabel = 'Annualized Cumulative TWR',
+                                       main   = main))
+                ## add portfolio
+                points(perfport$std.ann, perfport$twrc.ann, col='red', pch=1)
+                ## add benchmark
+                points(perfbench1$std.ann, perfbench1$twrc.ann, col='blue', pch=2)
+                ## add efficient frontier line
+                efdata.Schwab <- ef(model='Schwab', efdata=twri.ef,
+                                    annualize=TRUE, addline=TRUE, col='black', lty=1, pch=3)
+                efdata.simple <- ef(model='simple', efdata=twri.ef,
+                                    annualize=TRUE, addline=TRUE, col='black', lty=2, pch=4)
+                mtext('(portfolio = open red circle; benchmark = open blue triangle)',
+                      side=3, line=0.8, cex=1)
+                mtext('(Schwab EF = solid line; S&P 500 / AGG EF = dotted line)',
+                      side=3, line=0, cex=1)
+            } else {
+                cat('WARNING: Insufficient number of rows in twri for requested rra plot.\n')
+            }
 
         }
 
