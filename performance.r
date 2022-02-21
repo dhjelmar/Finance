@@ -53,6 +53,7 @@ portfolio     <-  church
 portfolioname <- 'Church'
 
 period        <- 'months'
+ytd       <- '2021-12/2022'  # ytd
 xtsrange1 <- '2020-12/2021'  # 1 year
 xtsrange3 <- '2018-12/2021'  # 3 year
 xtsrange5 <- '2016-12/2021'  # 5 year
@@ -140,9 +141,13 @@ if (!is.null(file)) {
         height = 8.5) # The height of the plot in inches
 }
 
-xtsrange.list <- c(xtsrange1, xtsrange3, xtsrange5)
+xtsrange.list <- c(ytd, xtsrange1, xtsrange3, xtsrange5)
 xtsrange.list <- '2020-12/2022-01'
+xtsrange.list <- ytd
 ## xtsrange.list <- '2021-12/2022-01' # YTD
+
+port.summary <- portfolio.summary(twri, value, twrib)
+
 for (xtsrange in xtsrange.list) {
 
     ## set 2x2 plot space filling by columns first
