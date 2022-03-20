@@ -37,7 +37,7 @@ twrsheet   <- out$twrsheet
 ## define portfolios created from combining accounts
 accounts <- names(twrsheet)
 print(accounts)
-church <- accounts[1:5]
+church <- accounts[1:7]
 de     <- accounts[grepl('^D |^E |^DE', accounts)]
 p      <- accounts[grepl('^P'         , accounts)]
 
@@ -124,7 +124,7 @@ prep <- function(portfolio, portfolioname='portfolio') {
     
 }
 ## prepare info for requested evaluation
-out    <- prep(portfolio, portfoliorange)
+out    <- prep(portfolio, portfolioname)
 twri   <- out$twri
 twrib  <- out$twrib
 efdata <- out$efdata
