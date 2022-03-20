@@ -11,6 +11,9 @@ portfolio.summary <- function(twri, value, twrib) {
 
     ## create dataframe for output
     df <- data.frame(description = c(names(twri), 'portfolio', names(twrib)))
+    
+    ## convert any NA to 0
+    twri[is.na(twri)] <- 0 
 
     ## check that twri and value have the same dates (needed for portfolio weighting over time)
     if (!identical(zoo::index(value), zoo::index(twri))) {
