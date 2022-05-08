@@ -25,6 +25,7 @@ for (f in r_files) {
 portfolioname <- 'Portfolio 1'
 holding       <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
 weight        <- rep(1/length(holding), length(holding))
+port_in  <- data.frame(class=NA, holding=holding, weight=weight)
 
 ## another way to enter the portfolio holdings
 portfolioname <- 'MS'
@@ -54,9 +55,9 @@ bench <- 'SPY'
 ##-----------------------------------------------------------------------------
 ## define a timeframe and period for incremental TWR
 period   <- 'months'
-xtsrange1 <- '2020-12-31/2021-12'
-xtsrange3 <- '2018-12-31/2021-12'
-xtsrange5 <- '2016-12-31/2021-12'
+xtsrange1 <- '2021-12-31/2022-12'
+xtsrange3 <- '2019-12-31/2022-12'
+xtsrange5 <- '2017-12-31/2022-12'
 
 ##-----------------------------------------------------------------------------
 ## get twri for holdings, benchmark, and efficient frontier
@@ -65,7 +66,7 @@ twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
 twri.ef <- ef(period=period, addline=FALSE)$twri
 
 ## calculate and plot performance
-backtest <- function(twri, weight, twrib, twri.ef, xtsrange) {
+backtest.here <- function(twri, weight, twrib, twri.ef, xtsrange) {
     port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
     plotspace(2,2)
     out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
@@ -74,7 +75,9 @@ backtest <- function(twri, weight, twrib, twri.ef, xtsrange) {
                           main=paste('Benchmark = ', names(twrib)[1], sep=''))
     return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
 }
-out <- backtest(twri, weight, twrib, twri.ef, xtsrange)
+out <- backtest.here(twri, weight, twrib, twri.ef, xtsrange1)
+out <- backtest(holding, weight, bench, xtsrange1, period='days',
+                twri, twrib, twri.ef)
 port <- out$port
 
 ## efficient frontier line is set based on last call to risk/reward plot in portfolio.plot ('rr' or 'rra')
