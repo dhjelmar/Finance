@@ -25,11 +25,12 @@ for (f in r_files) {
 portfolioname <- 'Portfolio 1'
 holding       <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
 weight        <- rep(1/length(holding), length(holding))
-port_in  <- data.frame(class=NA, holding=holding, weight=weight)
+port1 <- data.frame(holding=holding, weight=weight)
 
 ## another way to enter the portfolio holdings
-portfolioname <- 'MS'
-portfolio <- '
+## only need holding and weight vectors to be defined
+port2name <- 'MS'
+port2 <- '
 class       holding   weight     # comments
 US_L_G      APGAX      8
 US_L_G      LCGFX      8         # $50 fee to buy
@@ -44,10 +45,32 @@ Alt         CTFAX      2
 Bond_short  SMRSX     20
 Bond_global MWFSX      5
 '
-port_in  <- readall(portfolio)
-holding  <- as.character( port_in$holding )
-weight   <- port_in$weight / 100
+port2  <- readall(port2)
+port2$weight <- port2$weight / 100
 
+## personal capital balanced
+port3name <- 'PersonalCapitalBalanced'
+port3 <- '
+class       holding   weight
+US          VTI       48.7
+Inter       VEU       21
+Alt         VNQ        3.4
+Alt         IAU        3.3
+Alt         DBC        3.3
+Bond_US     AGG       16.6
+Bond_Inter  IGOV       2.9
+Cash        Cash       0.8
+'
+port3 <- readall(port3)
+port3$weight <- port3$weight / 100
+sum(port3$weight)
+
+## choose one of the above sample portfolios
+portfolio     <- port3
+portfolioname <- port3$name
+holding  <- as.character( portfolio$holding )
+weight   <- portfolio$weight
+if (sum(weight) == 0) cat('WARNING: Portfolio holding weight sum =', sum(weight), 'but should sum to 1\n')
 
 ## define a benchmark to use in the evaluation
 bench <- 'SPY'
@@ -76,8 +99,12 @@ backtest.here <- function(twri, weight, twrib, twri.ef, xtsrange) {
     return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
 }
 out <- backtest.here(twri, weight, twrib, twri.ef, xtsrange1)
-out <- backtest(holding, weight, bench, xtsrange1, period='days',
+out <- backtest(holding, weight, bench, xtsrange1, period=period,
                 twri, twrib, twri.ef)
+port <- out$port
+
+## without pre-calculating twri, twrib, twri.ef
+out <- backtest(holding, weight, bench, xtsrange5, period=period)
 port <- out$port
 
 ## efficient frontier line is set based on last call to risk/reward plot in portfolio.plot ('rr' or 'rra')
@@ -91,6 +118,8 @@ shinyplot(as.data.frame(out$port$perf), 'beta', 'alpha')
 
 ## look at correlation between investments
 pairsdf(as.data.frame(port$twri))
+plotspace(1,1)
+GGally::ggpairs(as.data.frame(port$twri))
 
 ##-----------------------------------------------------------------------------
 ## how about this last year?
