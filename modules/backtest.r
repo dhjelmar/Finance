@@ -1,14 +1,18 @@
-backtest <- function(holding, weight, bench, xtsrange, period='days',
+backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='months',
                      twri, twrib, twri.ef) {
 
     ## simple input:
     ##     holding = vector of holdings        (e.g., c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'))
     ##               if not provided, assume holding = names(twri)
     ##     weight  = vector of holding weights (e.g., c( 0.4,   0.2,   0.1,   0.3,   0.1))
-    ##     bench   = benchmark                 (e.g., 'SPY')
-    ##               if not provided, assume bench = names(twrib)[1]
+    ##             = 'equal' sets holding weights to 1/(# of holdings)
+    ##     bench   = benchmark                 (e.g., default is 'SPY')
+    ##               if not provided, assume bench = names(twrib)[1] if provided
     ##     period  = 'days' (default), 'weeks', 'months', 'years'
     ##     xtsrange = requested date range to evaluate twri over (e.g., '2020-12-31/2021')
+    ##              = 5 (default) for last 5 years
+    ##              = # for last # years
+    ##              = 0 for YTD
 
     ## alternate input options:
     ##     twri    = xts object with twri for holdings
@@ -27,6 +31,17 @@ backtest <- function(holding, weight, bench, xtsrange, period='days',
     if (missing(twri.ef)) twri.ef <- ef(period=period, addline=FALSE)$twri
 
     ## check twri dates within xtsrange and covert everything to that if they do not match
+    if (xtsrange == 0) {
+        ## set to YTD
+        start <- format(Sys.Date(), "%Y")
+        end   <- Sys.Date()
+        xtsrange <- paste(start, '/', end, sep='')
+    } else if (is.number(xtsrange)) {
+        ## set to requested number of years
+        start <- Sys.Date() - 365.25 * xtsrange
+        end   <- Sys.Date()
+        xtsrange <- paste(start, '/', end, sep='')
+    }        
     twri <- twri[xtsrange]
     dates <- zoo::index(twri)
     twrib   <- twri.adjust(twrib  , d2m=FALSE, dates.new=dates, twri.input=TRUE)
@@ -43,6 +58,10 @@ backtest <- function(holding, weight, bench, xtsrange, period='days',
     }
     
     ## calculate portfolio performance
+    if (weight == 'equal') {
+        nhold <- length(holding)
+        weight <- rep(1/nhold, nhold)
+    }
     port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
 
     ## plot portfolio performance
