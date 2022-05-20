@@ -1,5 +1,7 @@
 backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='months',
-                     twri, twrib, twri.ef) {
+                     twri, twrib, twri.ef,
+                     plottype=c('twri', 'ab', 'twrc', 'rr', 'portfolio'),
+                     standard.layout=TRUE, main=NULL) {
 
     ## simple input:
     ##     holding = vector of holdings        (e.g., c('SPY', 'IWM', 'EFA', 'AGG', 'SHV'))
@@ -15,14 +17,24 @@ backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='m
     ##              = 0 for YTD
 
     ## alternate input options:
-    ##     twri    = xts object with twri for holdings
-    ##               if holding is also provided, will pull twri for holdings from twri
-    ##               if not provided, will be obtained
-    ##     twrib   = xts object with twri for benchmark 
-    ##               if bench is also provided, will pull twri for bench from twrib
-    ##               if not provided, will be obtained
-    ##     twri.ef = xts object with twri for effective frontier symbols
-    ##               if not provided, will be obtained
+    ##     twri     = xts object with twri for holdings
+    ##                if holding is also provided, will pull twri for holdings from twri
+    ##                if not provided, will be obtained
+    ##     twrib    = xts object with twri for benchmark 
+    ##                if bench is also provided, will pull twri for bench from twrib
+    ##                if not provided, will be obtained
+    ##     twri.ef  = xts object with twri for effective frontier symbols
+    ##                if not provided, will be obtained
+    ##     main     = title for some of the plots (default=NULL)
+    ##     plottype = default plots everything
+    ##              = twri  = incremental TWR
+    ##              = twrc  = cumulative TWR
+    ##              = ab    = alpha vs. beta
+    ##              = rr    = risk/return (TWR vs. standard deviation)
+    ##                        actual TWR if < 1 yr; cumulative TWR if > 1 yr
+    ##              = portfolio = portfolio plots
+    ##     standard.layout = TRUE (default) uses 2x2 plot space for i, c, ab, and rr
+    ##                     = FALSE uses existing plot setup
     
     ## if not input, get twri for holdings, benchmark, and efficient frontier
     if (missing(holding)) holding <- names(twri)
@@ -65,28 +77,43 @@ backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='m
     port <- portfolio.calc(twri[xtsrange], weight=weight, twrib=twrib[xtsrange])
 
     ## plot portfolio performance
-    plotspace(2,2)
+    if (isTRUE(standard.layout)) plotspace(2,2)
     duration <- as.numeric(diff.Date(range(dates)))
-    if (duration > 365.25) {
-        ## print annualized risk/return plot
-        out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
-                              twri.ef=twri.ef[xtsrange],
-                              plottype=c('twri', 'ab', 'twrc', 'rra'), pch.hold = 16,
-                              main=paste('Benchmark = ', names(twrib)[1], sep=''))
+    if (!is.null(main)) main <- paste(main, '; ', sep='')
+    if (grepl('twri', plottype) | grepl('ab', plottype) |
+        grepl('twrc', plottype) | grepl('rr', plottype)) {
+        ## at least one plot for individual holdings is requestedf
+        if (duration > 365.25) {
+            ## print annualized risk/return plot
+            ## if requested plottype includes rr (risk/return), replace with rra (annualized risk/return)
+            plottype <- str_replace(plottype, 'rr', 'rra')
+            out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                                  twri.ef=twri.ef[xtsrange],
+                                  plottype=plottype, pch.hold = 16,
+                                  main=paste(main, 'Benchmark = ', names(twrib)[1], sep=''))
+        } else {
+            ## print non-annualized risk/return plot
+            out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
+                                  twri.ef=twri.ef[xtsrange],
+                                  plottype=plottype, pch.hold = 16,
+                                  main=paste(main, 'Benchmark = ', names(twrib)[1], sep=''))
+        }        
     } else {
-        ## print non-annualized risk/return plot
-        out <- portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
-                              twri.ef=twri.ef[xtsrange],
-                              plottype=c('twri', 'ab', 'twrc', 'rr'), pch.hold = 16,
-                              main=paste('Benchmark = ', names(twrib)[1], sep=''))
-    }        
+        ## no individual holding plots are requested
+        out <- NA
+    }
     
-    ## evaluate portfolio as if it were a mutural fund
-    out.eq <- equity.eval(twri = port$twri$portfolio, twrib = twrib, period=period)
-    ##                    bench='schwab_80_20', twrib = out$efdata.Schwab$eftwri$schwab_80_20)
+    if (grepl('portfolio', plottype)) {
+        ## evaluate portfolio as if it were a mutural fund
+        out.eq <- equity.eval(twri = port$twri$portfolio, twrib = twrib, period=period)
+        ##                    bench='schwab_80_20', twrib = out$efdata.Schwab$eftwri$schwab_80_20)
+    }
     
-    return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
-    
+    if (is.na(out)) {
+        return(list(port=port, efdata.Schwab=NA, efdata.simple=NA))
+    } else {        
+        return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
+    }
 }
 ## xtsrange1 <- '2020-12-31/2021-12'
 ## xtsrange3 <- '2018-12-31/2021-12'
