@@ -21,20 +21,54 @@ for (f in r_files) {
 }
 
 ##-----------------------------------------------------------------------------
+## simplest application
+out <- backtest(holding=c('VNQ', 'RQI'))
+out <- backtest(holding=c('VNQ', 'RQI'), weight='equal', bench='SPY', xtsrange=0, period='months')
+
+
+##-----------------------------------------------------------------------------
+## a little more efficient application if looking to run multiple times with different holdings
+## first get benchmarch and efficient frontier TWR objects
+twrib <- equity.twri('SPY'  , refresh=TRUE, file=NA, period='days')
+twri.ef <- ef(period='days', addline=FALSE)$twri
+## now look at performance of holdings relative to above
+out <- backtest(holding=c('VNQ', 'RQI'), twrib=twrib, twri.ef=twri.ef)
+out <- backtest(holding=c('VNQ', 'RQI'), twrib=twrib, twri.ef=twri.ef, period='days')
+out <- backtest(holding=c('VNQ', 'NRZ',           # REITs
+                          'AMT', 'SBAC', 'CCI'),  # tower companies
+                twrib=twrib, 
+                twri.ef=twri.ef, 
+                xtsrange=3, 
+                plottype=c('twri', 'ab', 'twrc', 'rr'),
+                main='REIT')
+## sort output by TWRC
+out$port$perf[order(out$port$perf$twrc, decreasing=TRUE),]
+
+out <- backtest(holding=c('CVSIX',    # market neutral
+                          'CTFAX',    # global macro
+                          'SMRSX',    # short bond
+                          'MWFSX',    # global bond
+                          'GIOAX'),   # credit?
+                twrib=twrib, twri.ef=twri.ef, xtsrange=0, 
+                plottype=c('twri', 'ab', 'twrc', 'rr'),
+                main='Alt + Fixed')
+out$port$perf[order(out$port$perf$twrc, decreasing=TRUE),]
+
+
+##-----------------------------------------------------------------------------
 ## identify holdings and weights that comprise portfolio
-portfolioname <- 'Portfolio 1'
 holding       <- c('SPY', 'IWM', 'EFA', 'AGG', 'SHV')
 weight        <- rep(1/length(holding), length(holding))
 port1 <- data.frame(holding=holding, weight=weight)
-
-## another way to enter the portfolio holdings
-## only need holding and weight vectors to be defined
-port2name <- 'MS'
-port2 <- '
-class       holding   weight     # comments
-US_L_G      APGAX      8
-US_L_G      LCGFX      8         # $50 fee to buy
-US_L_V      SCHD      16
+class       port1$port <- 'Portfolio 1'
+US          
+Inter       ## another way to enter the portfolio holdings
+Alt         ## only need holding and weight vectors to be defined
+Alt         port <- '
+Alt         class       holding   weight     # comments
+Bond_US     US_L_G      APGAX      8
+Bond_Inter  US_L_G      LCGFX      8         # $50 fee to buy
+Cash        US_L_V      SCHD      16
 US_M_G      BMDSX      7
 US_M_V      JNVSX      7
 Global      GWPAX      9
@@ -45,12 +79,12 @@ Alt         CTFAX      2
 Bond_short  SMRSX     20
 Bond_global MWFSX      5
 '
-port2  <- readall(port2)
-port2$weight <- port2$weight / 100
+port.ms  <- readall(port)
+port.ms$weight <- port.ms$weight / 100
+port.ms$port <- 'MorganStanley'
 
 ## personal capital balanced
-port3name <- 'PersonalCapitalBalanced'
-port3 <- '
+port <- '
 class       holding   weight
 US          VTI       48.7
 Inter       VEU       21
@@ -61,9 +95,10 @@ Bond_US     AGG       16.6
 Bond_Inter  IGOV       2.9
 Cash        Cash       0.8
 '
-port3 <- readall(port3)
-port3$weight <- port3$weight / 100
-sum(port3$weight)
+port.pc <- readall(port)
+port.pc$weight <- port.pc$weight / 100
+sum(port.pc$weight)
+port.pc$port <- 'PersonalCapital - Balanced'
 
 ## choose one of the above sample portfolios
 portfolio     <- port3
