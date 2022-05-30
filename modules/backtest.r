@@ -42,7 +42,7 @@ backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='m
     if (missing(twrib))   twrib <- equity.twri(bench  , refresh=TRUE, file=NA, period=period)
     if (missing(twri.ef)) twri.ef <- ef(period=period, addline=FALSE)$twri
 
-    ## check twri dates within xtsrange and covert everything to that if they do not match
+    ## check twri dates within xtsrange and convert everything to that if they do not match
     if (xtsrange == 0) {
         ## set to YTD
         start <- format(Sys.Date(), "%Y")
@@ -63,6 +63,19 @@ backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='m
     twri_all <- cbind(twri, twrib, twri.ef)
     twri_all <- na.omit(twri_all)
     dates.all <- zoo::index(twri_all)
+
+    ## if needed, trim all XTS objects to match range of twri_all
+    if (dates[1] != dates.all[1]) {
+        cat('\nWarning: Some holding likely has NA in first date.\n')
+        print(twri[1,])
+        xtsrange <- paste(min(zoo::index(twri_all)), '/', max(zoo::index(twri_all)), sep='')
+        twri    <-    twri[xtsrange]
+        dates   <- zoo::index(twri)
+        twrib   <-   twrib[xtsrange]
+        twri.ef <- twri.ef[xtsrange]
+    }
+    
+    ## make sure dates are consistent between twri and all combined
     mismatch <- grep('FALSE', dates == dates.all)
     if (length(mismatch) > 1) {
         cat('\nFatal error: Select new date range. Some holdings have twri=NA.\n')
@@ -112,7 +125,7 @@ backtest <- function(holding, weight='equal', bench='SPY', xtsrange=5, period='m
     if (is.na(out)) {
         return(list(port=port, efdata.Schwab=NA, efdata.simple=NA))
     } else {        
-        return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple))
+        return(list(port=port, efdata.Schwab=out$efdata.Schwab, efdata.simple=out$efdata.simple, xtsrange=xtsrange))
     }
 }
 ## xtsrange1 <- '2020-12-31/2021-12'
