@@ -1,13 +1,20 @@
-portfolio.summary <- function(twri, value, twrib) {
+portfolio.summary <- function(twri, value, twrib,
+                              ##                   YTD       1 year       3 years      5 years
+                              periods      = list('1 year', '12 months', '36 months', '60 months'),
+                              period.names = list('TWRC YTD', 'TWRC 1-yr', 'TWRC 3-yr', 'TWRC 5-yr')) {
 
-    ## Minimum input
-    ## Given:     twri    = incremental TWR (time weighted return) for holdings
+
+    
+    ## Input:     twri    = incremental TWR (time weighted return) for holdings
     ##            value   = xts object with value of each holding over time
     ##            twrib   = twri for benchmark
-    ##            twri.ef = twri for efficient frontier
+    ##            periods = list defining number of periods for TWRC calculations
+    ##                      (e.g., periods=5, periods=c(5, '2 years')
+    ##            period.names = list of names to use in output dataframe
+    ##                           default is for use with default periods
+    ##                         = 'extract' will use range for desired number of periods
 
-    ## Output:    twrc.ytd = twrc (cumulative TWR) for year to date
-    ##            twrcb    = twrc for benchmark
+    ## Output:    dataframe with value, weight, and TWRC for YTD, 1-yr, 3-yr, 5-yr
 
     ## create dataframe for output
     df <- data.frame(description = c(names(twri), 'portfolio', names(twrib)))
@@ -48,14 +55,13 @@ portfolio.summary <- function(twri, value, twrib) {
     
     ## set date ranges to evaluate
     dates <- zoo::index(twri)
-    ##               YTD       1 year       3 years      5 years
-    date.range <- c('1 year', '12 months', '36 months', '60 months')
 
     i <- 0
     twrc <- NA
     df.names <- names(df)
     ## add twrc values for various date ranges to df
-    for (date.eval in date.range) {
+    xtsrange.save <- NA   # initialize list
+    for (date.eval in periods) {
 
         i <- i + 1
         
@@ -66,6 +72,7 @@ portfolio.summary <- function(twri, value, twrib) {
         from <- zoo::index(twri.eval)[1]
         to   <- zoo::index(twri.eval)[nrow(twri.eval)]
         xtsrange <- paste(from, '/', to, sep='')
+        xtsrange.save[i] <- list(xtsrange)
 
         ## above xtsrange words easiest for TWRC
         ## but need the time zero from date to later convert to twrc.annual
@@ -92,7 +99,13 @@ portfolio.summary <- function(twri, value, twrib) {
     }
 
     row.names(df) <- seq(1, nrow(df))
-    names(df) <- c(df.names, 'TWRC YTD', 'TWRC 1-yr', 'TWRC 3-yr', 'TWRC 5-yr')
+    if (period.names[1] == 'extract') {
+        ## rename headings for dataframe
+        names(df) <- c(df.names, c(xtsrange.save))
+    } else {
+        ## use input names
+        names(df) <- c(df.names, period.names)
+    }
     df.cols <- ncol(df)
     perf <- df
     perf$date <- zoo::index(twri.eval)[nrow(twri.eval)]
