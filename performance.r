@@ -9,9 +9,9 @@
 os <- .Platform$OS.type
 if (os == 'windows') {
     ## load generic modules
-    source("F:\\Documents\\01_Dave's Stuff\\Programs\\GitHub_home\\R-setup\\setup.r")
+    source("F:\\Documents\\01_Dave\\Programs\\GitHub_home\\R-setup\\setup.r")
     ## identify working folder
-    path <- c("f:/Documents/01_Dave's Stuff/Programs/GitHub_home/Finance/")
+    path <- c("f:/Documents/01_Dave/Programs/GitHub_home/Finance/")
 } else {
     ## os == unix
     source('~/GitHub_repos/R-setup/setup.r')
@@ -33,15 +33,19 @@ out        <- performance.read()
 valuesheet <- out$valuesheet
 twrsheet   <- out$twrsheet
 
+
 ##-----------------------------------------------------------------------------
 ## define portfolios created from combining accounts
 accounts <- names(twrsheet)
 print(accounts)
-church <- accounts[1:7]
+church <- accounts[1:8]
+endow  <- accounts[grepl('End', accounts)]
 de     <- accounts[grepl('^D |^E |^DE', accounts)]
 p      <- accounts[grepl('^P'         , accounts)]
 
+
 ##-----------------------------------------------------------------------------
+## EVALUATION  SETTINGS
 ## select a portfolio and timeframe for the evaluation
 portfolio     <- de
 portfolioname <- 'DE'
@@ -52,109 +56,63 @@ portfolioname <- 'p'
 portfolio     <-  church
 portfolioname <- 'Church'
 
+portfolio     <-  endow
+portfolioname <- 'Church Endowment Fund'
+
+## define vector of xtsranges to evaluate
 period        <- 'months'
 ytd       <- '2021-12/2022'  # ytd
-xtsrange1 <- '2020-12/2021'  # 1 year
-xtsrange3 <- '2018-12/2021'  # 3 year
-xtsrange5 <- '2016-12/2021'  # 5 year
-xtsrange  <- xtsrange1
+xtsrange1 <- '2021-12/2022'  # 1 year
+xtsrange3 <- '2019-12/2022'  # 3 year
+xtsrange5 <- '2017-12/2022'  # 5 year
+xtsrange.vec <- c(ytd, xtsrange1, xtsrange3, xtsrange5)
+xtsrange.vec <- '2020-12/2022-01'
+xtsrange.vec <- ytd
+## xtsrange.vec <- '2021-12/2022-01' # YTD
 
-prep <- function(portfolio, portfolioname='portfolio') {
-    ## this is pretty lazy since I am not passing everything needed
-    ## portfolio is a vector of one or more names in the accounts vector
-    ## portfolioname is just used for plot headings
-
-    ##-----------------------------------------------------------------------------
-    ## pull twri from twrsheet
-    twri <- twrsheet[, (colnames(twrsheet) %in% tidyselect::all_of(portfolio))]
-    ## adjust twri to market days
-    twri <- twri.adjust(twri)
-
-    ##-----------------------------------------------------------------------------
-    ## get effective frontier data
-    efdata <- ef(model='Schwab', period='days', addline=FALSE)
-    ## adjust dates to same as defined in twri
-    efdata$twri <- twri.adjust(efdata$twri, dates.new = zoo::index(twri))
-
-    ##-----------------------------------------------------------------------------
-    ## define benchmarks
-    twrib  <- (efdata$eftwri$schwab_60_40 + efdata$eftwri$schwab_80_20) / 2
-    names(twrib) <- 'Schwab_70_30'
-    twrib <- twri.adjust(twrib, dates = zoo::index(twri))
-
-    ## add CPI+5% as a benchmark if exists inside twrsheet
-    if (which(grepl('CPI', names(twrsheet))) > 0) {
-        ## twri for CPI (consumer price index) provided for plotting
-        cpi          <- twri.adjust( twrsheet$CPI )
-        twrib        <- cbind(twrib, cpi)
-        p5           <- 0
-        twrib$CPI.p5 <- 0
-        date <- as.numeric( zoo::index(twrib) )
-        for (i in 2:nrow(twrib)) {
-            ## add 5% to CPI
-            elapsed <- date[i] - date[i-1]
-            p5[i]   <- 0.05 / (365.25 / elapsed)
-            twrib$CPI.p5[i] <- twrib$CPI[i] * 0 + p5[i]
-            ## twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
-        }
-        ## assume 1st p5 entry is same as the 2nd
-        twrib$CPI.p5[1] <- twrib$CPI[1] + p5[2]
-        ## eliminate the CPI column
-        twrib$CPI <- NULL
-        ## rename 'CPI.p5' to 'CPI+5%'
-        ## the following works but the complex name gets messed up and replaced down the line
-        ## names(twrib) <- stringr::str_replace(names(twrib), 'CPI.p5', 'CPI+5%')
-    }
+## identify name of pdf filename to create (NULL plots to screen)
+filename <- 'church.pdf'
+filename <- NULL
 
 
-    ##-----------------------------------------------------------------------------
-    ## pull value from valuesheet
-    value <- valuesheet[, (colnames(valuesheet) %in% tidyselect::all_of(portfolio))]
-    ## adjust twri to market days
-    value <- twri.adjust(value, twri.input = FALSE)
+##-----------------------------------------------------------------------------
+## evalaute portfolio
 
-
-    ##-----------------------------------------------------------------------------
-    ## evaluate portfolio
-    ## look at available date range
-    print('Available dates:')
-    print(zoo::index(twri))
-
-    return(list(twri=twri, twrib=twrib, efdata=efdata, value=value))
-    
-}
-## prepare info for requested evaluation
-out    <- prep(portfolio, portfolioname)
+##----------------------
+## prepare XTS objects for evaluation
+out    <- prep(portfolio)
 twri   <- out$twri
 twrib  <- out$twrib
 efdata <- out$efdata
 value  <- out$value
 
+##----------------------
+## create summary table
+port.summary <- portfolio.summary(twri, value, twrib)
+## port.summary <- portfolio.summary(twri, value, twrib, periods=list( 8, '1 year'), period.names='extract')
+## port.summary <- portfolio.summary(twri, value, twrib, periods=list(12, '12 months'), period.names='extract')
+## port.summary <- portfolio.summary(twri, value, twrib, periods=list(12, '1 year'), period.names=list('TWRC 12 periods', 'TWRC 1 year'))
 
-file <- NULL
-file <- 'church.pdf'
-if (!is.null(file)) {
+##----------------------
+## create performance plots
+if (!is.null(filename)) {
     ## create PDF of plots
-    pdf(file = file, onefile = TRUE,          # creates a multi-page PDF file
+    pdf(file = filename, onefile = TRUE,          # creates a multi-page PDF file
         ## file = "performance%03d.pdf", onefile = FALSE,  # creates multiple PDF files
         width = 11,  # The width of the plot in inches
         height = 8.5) # The height of the plot in inches
 }
 
-xtsrange.list <- c(ytd, xtsrange1, xtsrange3, xtsrange5)
-xtsrange.list <- '2020-12/2022-01'
-xtsrange.list <- ytd
-## xtsrange.list <- '2021-12/2022-01' # YTD
 
-port.summary <- portfolio.summary(twri, value, twrib)
 
-for (xtsrange in xtsrange.list) {
+for (xtsrange in xtsrange.vec) {
 
     ## set 2x2 plot space filling by columns first
     par(mfcol=c(2,2))
 
     ## plot portfolio performance with selected benchmark
-    port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange])
+        ## treat missing twri as zero
+    port <- portfolio.calc(twri[xtsrange], value=value[xtsrange], twrib=twrib[xtsrange], na.value=0)
     portfolio.plot(twri=port$twri, twrc=port$twrc, perf=port$perf, 
                    twri.ef=efdata$twri[xtsrange],
                    plottype=c('twri', 'twrc', 'ab', 'rra'), pch.hold = 16,
@@ -166,7 +124,7 @@ for (xtsrange in xtsrange.list) {
     twrib.m  <- equity.twri('SPY', period='months')
     xtsrange <- range(zoo::index(twri.m[xtsrange]))
     xtsrange <- paste(xtsrange[1], '/', xtsrange[length(xtsrange)], sep='')
-    port.m  <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange])
+    port.m  <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange], na.value=0)
     efdata.m <- ef(model='Schwab', period='months', addline=FALSE)
     portfolio.plot(twri=port.m$twri, twrc=port.m$twrc, perf=port.m$perf, 
                    twri.ef=efdata.m$twri[xtsrange],
@@ -189,7 +147,7 @@ port.twri <- port.m.all$twri$portfolio
 port.twri <- na.omit(port.twri)
 out <- equity.eval(portfolioname, bench='SPY', twri=port.twri, period='months')
 
-if (!is.null(file)) dev.off() # close external pdf (or jpg) file
+if (!is.null(filename)) dev.off() # close external pdf (or jpg) file
 
 
 ## interactive plots
