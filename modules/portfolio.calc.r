@@ -11,7 +11,7 @@ portfolio.calc.test <- function() {
 }
 
 portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
-                           twrib) {
+                           twrib, na.value=NA) {
 
     ## Minimum input
     ## Given:     twri (incremental TWR (time weighted return)) for holdings
@@ -32,8 +32,13 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     ##                      (note: this is what ef.r currently assumes)
     ##                    = 'years' to rebalance at end of each year
     ##          twrib     = xts object with twri or benchmark over time
+    ##          na.value  = NA (default) leaves any missing twri as NA which disrupts twrc calculation
+    ##                    = # sets twri with missing values to # (e.g., 0)
 
     holding <- names(twri)
+
+    ## adjust missing twri to supplied NA value
+    twri[is.na(twri)] <- na.value
     
     ## create portfolio twri
     if (class(value)[1] == 'xts') {
@@ -92,7 +97,7 @@ portfolio.calc <- function(twri, weight=NA, value=NA, rebalance='period',
     
     ## combine into single xts object
     twriall <- cbind(twri, portfolio, twrib)
-
+    
     ## cumulative twr and standard deviation
     ## 1st date should have twrc = 0
     twrc  <- xts::as.xts( t(t(cumprod(twriall+1)) / as.vector(twriall[1,]+1) - 1) )
