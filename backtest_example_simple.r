@@ -30,7 +30,11 @@ out <- backtest(holding=c('VNQ', 'RQI'), weight='equal', bench='SPY', xtsrange=0
 ## a little more efficient application if looking to run multiple times with different holdings
 ## first get benchmarch and efficient frontier TWR objects
 twrib <- equity.twri('SPY'  , refresh=TRUE, file=NA, period='days')
+twrib <- equity.twri('AGG'  , refresh=TRUE, file=NA, period='days')
 twri.ef <- ef(period='days', addline=FALSE)$twri
+
+
+##-----------------------------------------------------------------------------
 ## now look at performance of holdings relative to above
 out <- backtest(holding=c('VNQ', 'RQI'), twrib=twrib, twri.ef=twri.ef)
 out <- backtest(holding=c('VNQ', 'RQI'), twrib=twrib, twri.ef=twri.ef, period='days')
@@ -54,6 +58,44 @@ out <- backtest(holding=c('CVSIX',    # market neutral
                 main='Alt + Fixed')
 out$port$perf[order(out$port$perf$twrc, decreasing=TRUE),]
 
+## group 1
+holding.large <- c('AKREX', 'DSENX', 'JACTX', 'VYM')
+holding.small <- c('CDW', 'MCHP', 'UMBMX')   # ZM
+holding.inter <- c('NWFFX', 'RYIPX')
+holding.alt   <- c('BRIFX', 'SBAC', 'DBC', 'AMT')
+holding.alt   <- c('SBAC', 'DBC', 'AMT', 'IAU')
+holding.fixed <- c('AGG', 'LSBDX', 'PONAX')
+## group 2
+holding.large <- c('AKREX', 'EGFIX', 'FSRPX', 'ROGSX', 'SPLV', 'TRBCX', 'TWEIX', 'SWKS')
+holding.small <- c('FAMEX', 'JSCVX', 'UMBMX')
+holding.inter <- c('NWFFX', 'RYIPX')
+holding.alt   <- c('BRIFX', 'SBAC', 'DBC', 'AMT')
+holding.alt   <- c('SBAC', 'DBC', 'AMT', 'IAU')
+holding.fixed <- c('AGG', 'LSBDX', 'PONAX')
+## type
+holding.large.g <- c('AKREX', 'JACTX', 'EGFIX', 'FSRPX', 'ROGSX', 'TRBCX')
+holding.large.b <- c('DSENX', 'SPY')
+holding.large.v <- c('VYM', 'SPLV', 'TWEIX')
+holding.small.g <- c()
+holding.small.b <- c('FAMEX', 'UMBMX')
+holding.small.v <- c('JSCVX')
+holding.fixed   <- c('AGG', 'FRFZX', 'JPST', 'LALDX', 'PONAX', 'TIYRX')
+holding.stock <- c('NVDA', 'OKTA', 'SBAC', 'AMT', 'CDW', 'SPLV')
+holding.reit <- c('SBAC', 'AMT', 'VNQ')
+out <- backtest(holding=holding.fixed,
+                twrib=twrib,
+                ##    1     twrib='AGG',
+                twri.ef=twri.ef,
+                ## xtsrange=0, period='days',
+                xtsrange=20,
+                ## xtsrange='2020-01/2020-03', period='days',
+                plottype=c('twri', 'ab', 'twrc', 'rr'),
+                main='fixed')
+out$port$perf[order(out$port$perf$twrc, decreasing=TRUE),]
+
+out.ef <- out$efdata.simple$ef
+shinyplot(as.data.frame(out$port$perf), 'std.ann' , 'twrc.ann', xline=out.ef$efstd, yline=out.ef$eftwrc)
+shinyplot(as.data.frame(out$port$perf), 'beta', 'alpha')
 
 ##-----------------------------------------------------------------------------
 ## identify holdings and weights that comprise portfolio
