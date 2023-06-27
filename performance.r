@@ -38,8 +38,9 @@ twrsheet   <- out$twrsheet
 ## define portfolios created from combining accounts
 accounts <- names(twrsheet)
 print(accounts)
-church <- accounts[1:8]
+church <- accounts[1:9]
 endow  <- accounts[grepl('End', accounts)]
+terc   <- accounts[grepl('Terc', accounts)]
 de     <- accounts[grepl('^D |^E |^DE', accounts)]
 p      <- accounts[grepl('^P'         , accounts)]
 
@@ -59,7 +60,10 @@ portfolioname <- 'Church'
 portfolio     <-  endow
 portfolioname <- 'Church Endowment Fund'
 
-## define vector of xtsranges to evaluate
+portfolio     <-  terc
+portfolioname <- 'Tercentenary Fund'
+
+## define vector of xtsranges to evaluate (needed for plots but not for prep() or portfolio.summary() functions)
 period        <- 'months'
 ytd       <- '2021-12/2022'  # ytd
 xtsrange1 <- '2021-12/2022'  # 1 year
@@ -86,12 +90,40 @@ twrib  <- out$twrib
 efdata <- out$efdata
 value  <- out$value
 
+if (portfolioname == 'Church') {
+    
+    ##--------------------------------
+    ## dlh work in progress
+    ##--------------------------------
+    
+    ## print account returns for current year
+    print(twri[ytd])
+    print(twrib[ytd])
+    
+    ## need to combine some accounts
+    ## endowment fund
+    out    <- prep(endow)
+    out <- portfolio.summary(out$twri, out$value, twrib, na.to.zero=TRUE)
+    twri.endow <- out[out$account == 'portfolio',]
+    ## tercentenary fund
+    
+    ## combine with convenant and UP Mission funds
+    ## twri  <- dataframe(
+    ## value <- dataframe(
+}
+
 ##----------------------
 ## create summary table
-port.summary <- portfolio.summary(twri, value, twrib)
+port.summary <- portfolio.summary(twri, value, twrib, na.to.zero=TRUE)
 ## port.summary <- portfolio.summary(twri, value, twrib, periods=list( 8, '1 year'), period.names='extract')
 ## port.summary <- portfolio.summary(twri, value, twrib, periods=list(12, '12 months'), period.names='extract')
 ## port.summary <- portfolio.summary(twri, value, twrib, periods=list(12, '1 year'), period.names=list('TWRC 12 periods', 'TWRC 1 year'))
+
+## 2022 summmary
+## run following for endowment only to combine endowment Funds and also for all of church
+out.end <- portfolio.summary(twri['2018/2022'], value['2018/2022'], twrib['2018/2022'], na.to.zero=TRUE)
+out.all <- portfolio.summary(twri['2018/2022'], value['2018/2022'], twrib['2018/2022'], na.to.zero=TRUE)
+
 
 ##----------------------
 ## create performance plots
@@ -151,8 +183,9 @@ if (!is.null(filename)) dev.off() # close external pdf (or jpg) file
 
 
 ## interactive plots
-xtsrange <- '2018-12-31/2021-11-30'
+xtsrange <- '2018-12-31/2022'
 port.m   <- portfolio.calc(twri.m[xtsrange], value=value.m[xtsrange], twrib=twrib.m[xtsrange])
 efdata.m <- ef(model='Schwab', efdata=efdata.m$twri[xtsrange], annualize=TRUE, addline=FALSE)
 shinyplot(port.m$perf, 'beta'  , 'alpha')
 shinyplot(port.m$perf, 'std.ann', 'twrc.ann', xline=efdata.m$ef$efstd, yline=efdata.m$ef$eftwrc)
+
