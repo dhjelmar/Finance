@@ -30,7 +30,7 @@ twri.adjust <- function(xts, d2m=FALSE, dates.new=NA, twri.input=TRUE) {
     zoo::index(xts) <- as.Date(adjust, origin='1970-01-01')
         
     ##-----------------------------------------------------------------------------
-    if (isTRUE(d2m) | !is.na(dates.new)) {
+    if (isTRUE(d2m) | !is.na(dates.new[1])) {
         ## convert to months or provided dates
 
         ## number of columns in original xts object
@@ -39,7 +39,7 @@ twri.adjust <- function(xts, d2m=FALSE, dates.new=NA, twri.input=TRUE) {
         ## define range of dates in input xts object
         xts.range <- paste(xtsdates[1], '/', xtsdates[length(xtsdates)], sep='')
         
-        if (is.na(dates.new)) {
+        if (is.na(dates.new[1])) {
             ## create xts object from market open months for the input xts range
             xts.open <- xts.create(out$market.open.months, 1)[xts.range]
         } else {
