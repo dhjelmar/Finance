@@ -42,7 +42,7 @@ prep <- function(portfolio) {
             ## add 5% to CPI
             elapsed <- date[i] - date[i-1]
             p5[i]   <- 0.05 / (365.25 / elapsed)
-            twrib$CPI.p5[i] <- twrib$CPI[i] * 0 + p5[i]
+            twrib$CPI.p5[i] <- twrib$CPI[i] + p5[i]
             ## twrc.cpi <- twrc.calc(twri.cpi, zero.from=TRUE)
         }
         ## assume 1st p5 entry is same as the 2nd
